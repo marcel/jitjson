@@ -5,11 +5,12 @@ import (
 )
 
 type StructTypeSpec struct {
+	PackageName string
 	*ast.TypeSpec
 }
 
-func NewStructTypeSpec(spec *ast.TypeSpec) *StructTypeSpec {
-	return &StructTypeSpec{spec}
+func NewStructTypeSpec(packageName string, spec *ast.TypeSpec) *StructTypeSpec {
+	return &StructTypeSpec{PackageName: packageName, TypeSpec: spec}
 }
 
 func (s *StructTypeSpec) Name() string {

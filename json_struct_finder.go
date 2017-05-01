@@ -19,6 +19,8 @@ func (s JSONStructFinder) Structs(gocode []byte) []StructTypeSpec {
 
 	structs := []StructTypeSpec{}
 
+	packageName := fileNode.Name.Name
+
 	structFinder := func(node ast.Node) bool {
 		typeSpec, ok := node.(*ast.TypeSpec)
 		if !ok {
@@ -29,7 +31,7 @@ func (s JSONStructFinder) Structs(gocode []byte) []StructTypeSpec {
 			for _, field := range structType.Fields.List {
 				if field.Tag != nil && field.Tag.Kind == token.STRING {
 					if strings.Contains(field.Tag.Value, "json:") {
-						structs = append(structs, StructTypeSpec{typeSpec})
+						structs = append(structs, StructTypeSpec{packageName, typeSpec})
 						return true
 					}
 				}

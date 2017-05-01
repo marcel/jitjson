@@ -27,4 +27,6 @@ func (s *JSONStructFinderTestSuite) TestStructs() {
 	structFinder := new(JSONStructFinder)
 	structs := structFinder.Structs(s.gocode)
 	s.Equal(3, len(structs))
+
+	s.Equal("fixtures", structs[0].PackageName)
 }
