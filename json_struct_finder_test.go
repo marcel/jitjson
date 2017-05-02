@@ -1,11 +1,55 @@
 package jitjson
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 )
+
+// type MockFileSystemWalker struct {
+// 	fileInfos []MockFileInfo
+// }
+
+// type MockFileInfo struct {
+// 	name  string
+// 	isDir bool
+// }
+
+// func (m *MockFileInfo) Name() string {
+// 	return m.name
+// }
+
+// func (m *MockFileInfo) Size() int64 {
+// 	return 1024
+// }
+
+// func (m *MockFileInfo) Mode() os.FileMode {
+// 	if m.isDir {
+// 		return os.ModePerm | os.ModeDir
+// 	}
+
+// 	return os.ModePerm
+// }
+
+// func (m *MockFileInfo) ModTime() time.Time {
+// 	return time.Now()
+// }
+
+// func (m *MockFileInfo) IsDir() bool {
+// 	return m.isDir
+// }
+
+// func (m *MockFileInfo) Sys() interface{} {
+// 	return nil
+// }
+
+// func (m *MockFileSystemWalker) Walk(root string, walkFunc filepath.WalkFunc) {
+// 	for _, fileInfo := range m.fileInfos {
+// 		dir := filepath.Dir(fileInfo.Name())
+// 		file := filepath.Base(fileInfo.Name())
+// 		walkFunc(dir, fileInfo, nil)
+// 	}
+// }
 
 type JSONStructFinderTestSuite struct {
 	suite.Suite
@@ -16,17 +60,13 @@ func TestJSONStructFinderTestSuite(t *testing.T) {
 	suite.Run(t, new(JSONStructFinderTestSuite))
 }
 
-func (s *JSONStructFinderTestSuite) SetupSuite() {
-	code, err := ioutil.ReadFile("fixtures/structs.go")
-	s.Nil(err)
+func (s *JSONStructFinderTestSuite) TestFindInDir() {
+	finder := NewJSONStructFinder()
+	s.Equal(0, len(finder.StructDirectories()))
+	s.Equal(0, len(finder.StructTypeSpecs()))
 
-	s.gocode = code
-}
+	finder.FindInDir("fixtures")
 
-func (s *JSONStructFinderTestSuite) TestStructs() {
-	structFinder := new(JSONStructFinder)
-	structs := structFinder.Structs(s.gocode)
-	s.Equal(3, len(structs))
-
-	s.Equal("fixtures", structs[0].PackageName)
+	s.Equal(2, len(finder.StructDirectories()))
+	s.Equal(8, len(finder.StructTypeSpecs()))
 }

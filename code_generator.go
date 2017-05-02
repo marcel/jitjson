@@ -2,25 +2,57 @@ package jitjson
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"path/filepath"
 	"reflect"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 type CodeGenerator struct {
+	Directory string
+	Package   string
 	bytes.Buffer
 	structValue reflect.Value
 }
 
-func (c *CodeGenerator) PackageDelcaration() {
-	// TODO needs to be the actual right package name
-	c.WriteString("package jitjson\n\n")
+func NewCodeGenerator(directory string, packageName string) *CodeGenerator {
+	return &CodeGenerator{Directory: directory, Package: packageName}
+}
+
+func (c *CodeGenerator) PackageDeclaration() {
+	c.WriteString(fmt.Sprintf("package %s\n\n", c.Package))
 }
 
 func (c *CodeGenerator) ImportDeclaration() {
-	// TODO this is just a test impl, needs to be updated eventually
-	c.WriteString("import . \"github.com/marcel/jitjson/fixtures\"\n\n")
+	c.WriteString("import \"github.com/marcel/jitjson/encoding\"\n\n")
+}
+
+func (c *CodeGenerator) EncodingBufferStructWrapper() {
+	c.WriteString("type encodingBuffer struct {\n\tencoding.Buffer\n}\n\n")
+}
+
+func (c *CodeGenerator) JSONMarshalerInterfaceFor(structName string) {
+	buf := bytes.Buffer{}
+
+	buf.WriteString(fmt.Sprintf("func (s *%s) MarshalJSON() ([]byte, error) {\n", structName))
+	buf.WriteString("\tbuf := encodingBuffer{}\n")
+	buf.WriteString(fmt.Sprintf("\tbuf.%sStruct(*s)\n", strings.ToLower(structName)))
+	buf.WriteString("\treturn buf.Bytes(), nil\n")
+	buf.WriteString("}\n\n")
+
+	c.Write(buf.Bytes())
+}
+
+func (c *CodeGenerator) WriteFile() error {
+	targetFileName := "json_encoders.go"
+	targetPath := filepath.Join(c.Directory, targetFileName)
+
+	return ioutil.WriteFile(targetPath, c.Bytes(), 0644)
 }
 
 type encodableStructSpec struct {
@@ -69,17 +101,17 @@ func (c *CodeGenerator) generateMethodForStruct(structSpec *encodableStructSpec)
 
 	c.methodDeclaration()
 
-	c.encoderInvoke("openBrace")
+	c.encoderInvoke("OpenBrace")
 
 	for index, field := range structSpec.jsonFields {
 		if index != 0 {
-			c.encoderInvoke("comma")
+			c.encoderInvoke("Comma")
 		}
 		c.fieldEncodingFor(field)
 	}
 
 	c.WriteString("\n")
-	c.encoderInvoke("closeBrace")
+	c.encoderInvoke("CloseBrace")
 	c.endMethod()
 }
 
@@ -89,7 +121,7 @@ func (c *CodeGenerator) encoderInvoke(method string) {
 
 func (c *CodeGenerator) methodDeclaration() {
 	methodDecl := fmt.Sprintf(
-		"func (e *structEncoder) %sStruct(%s %s) {\n",
+		"func (e *encodingBuffer) %sStruct(%s %s) {\n",
 		c.structName(), c.structName(), c.structTypeName(),
 	)
 
@@ -104,7 +136,7 @@ func (c *CodeGenerator) fieldEncodingFor(field reflect.StructField) {
 		attrName = strings.ToLower(field.Name)
 	}
 
-	c.WriteString(fmt.Sprintf("\n  e.attr(\"%s\")\n", attrName))
+	c.WriteString(fmt.Sprintf("\n  e.Attr(\"%s\")\n", attrName))
 
 	// TODO Needs to be refactored to recursively support nested collections like
 	// a slice of a slice, etc
@@ -112,7 +144,7 @@ func (c *CodeGenerator) fieldEncodingFor(field reflect.StructField) {
 	default:
 		log.Println("Unsupported field kind", field.Type.Kind())
 	case reflect.Bool:
-		c.invokeEncoderForFieldType("bool", field)
+		c.invokeEncoderForFieldType("Bool", field)
 	case reflect.String:
 		c.stringFieldEncoding(field)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
@@ -130,7 +162,7 @@ func (c *CodeGenerator) dispatch(field reflect.StructField) string {
 }
 
 func (c *CodeGenerator) stringFieldEncoding(field reflect.StructField) {
-	c.invokeEncoderForFieldType("string", field)
+	c.invokeEncoderForFieldType("String", field)
 }
 
 func (c *CodeGenerator) intFieldEncoding(field reflect.StructField) {
@@ -138,29 +170,47 @@ func (c *CodeGenerator) intFieldEncoding(field reflect.StructField) {
 
 	switch field.Type.Kind() {
 	case reflect.Int64:
-		specializedIntEncoder = "int64"
+		specializedIntEncoder = "Int64"
 	case reflect.Int32:
-		specializedIntEncoder = "int32"
+		specializedIntEncoder = "Int32"
 	case reflect.Int16:
-		specializedIntEncoder = "int16"
+		specializedIntEncoder = "Int16"
 	case reflect.Int8:
-		specializedIntEncoder = "int8"
+		specializedIntEncoder = "Int8"
 	case reflect.Int:
-		specializedIntEncoder = "int"
+		specializedIntEncoder = "Int"
 	}
 
 	code := fmt.Sprintf("  e.%s(%s(%s))\n",
-		specializedIntEncoder, specializedIntEncoder, c.dispatch(field),
-	)
+		specializedIntEncoder, strings.ToLower(specializedIntEncoder), c.dispatch(field))
 
 	c.WriteString(code)
 }
 
 func (c *CodeGenerator) structFieldEncoding(field reflect.StructField) {
+	// TODO Consolidate this and the duplicate code in sliceFieldEncoding
+	jsonMarshalerType := reflect.TypeOf(new(json.Marshaler)).Elem()
+	if field.Type.Implements(jsonMarshalerType) {
+		buf := bytes.Buffer{}
+		buf.WriteString(fmt.Sprintf("  jsonBytes, err := %s.MarshalJSON()\n", c.dispatch(field)))
+		buf.WriteString("  if err != nil {\n\t\tpanic(err)\n\t}\n")
+		buf.WriteString("  e.Write(jsonBytes)\n")
+		c.Write(buf.Bytes())
+		return
+	}
+
 	targetStruct := strings.ToLower(field.Name)
 
 	code := fmt.Sprintf("  e.%sStruct(%s)\n", targetStruct, c.dispatch(field))
 	c.WriteString(code)
+}
+
+func (c *CodeGenerator) lowerCase(s string) string {
+	if s == "" {
+		return ""
+	}
+	r, n := utf8.DecodeRuneInString(s)
+	return string(unicode.ToLower(r)) + s[n:]
 }
 
 func (c *CodeGenerator) sliceFieldEncoding(field reflect.StructField) {
@@ -170,18 +220,29 @@ func (c *CodeGenerator) sliceFieldEncoding(field reflect.StructField) {
 	)
 
 	c.WriteString(forLoopLine)
-	c.WriteString("    if index != 0 { e.comma() }\n")
+	c.WriteString("    if index != 0 { e.Comma() }\n")
 
 	elementType := field.Type.Elem()
-
 	switch elementType.Kind() {
 	case reflect.Struct:
-		structName := strings.ToLower(elementType.Name())
+		jsonMarshalerType := reflect.TypeOf(new(json.Marshaler)).Elem()
+		if elementType.Implements(jsonMarshalerType) {
+			code := `jsonBytes, err := element.MarshalJSON()
+			if err != nil {
+				panic(err)
+			}
+			e.Write(jsonBytes)
+			`
+			c.WriteString(code)
+			return
+		}
+		// TODO Also check if it implements jitjson.JSONWriter
+		structName := c.lowerCase(elementType.Name())
 		code := fmt.Sprintf("    e.%sStruct(element)\n", structName)
 		c.WriteString(code)
 	default:
-		encoderFromKind := strings.ToLower(elementType.Kind().String())
-		code := fmt.Sprintf("    e.%s(element)\n", encoderFromKind)
+		encoderFromKind := strings.Title(elementType.Kind().String())
+		code := fmt.Sprintf("    e.%s(%s(element))\n", encoderFromKind, strings.ToLower(encoderFromKind))
 		c.WriteString(code)
 	}
 
@@ -190,7 +251,7 @@ func (c *CodeGenerator) sliceFieldEncoding(field reflect.StructField) {
 }
 
 func (c *CodeGenerator) invokeEncoderForFieldType(fieldType string, field reflect.StructField) {
-	code := fmt.Sprintf("  e.%s(%s)\n", fieldType, c.dispatch(field))
+	code := fmt.Sprintf("  e.%s(%s(%s))\n", fieldType, strings.ToLower(fieldType), c.dispatch(field))
 	c.WriteString(code)
 }
 

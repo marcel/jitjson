@@ -6,11 +6,8 @@ import (
 
 type StructTypeSpec struct {
 	PackageName string
+	Directory   string
 	*ast.TypeSpec
-}
-
-func NewStructTypeSpec(packageName string, spec *ast.TypeSpec) *StructTypeSpec {
-	return &StructTypeSpec{PackageName: packageName, TypeSpec: spec}
 }
 
 func (s *StructTypeSpec) Name() string {

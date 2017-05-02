@@ -1,7 +1,6 @@
 package jitjson
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -48,17 +47,12 @@ func (sf *SpecFixture) Spec(name string) *StructTypeSpec {
 }
 
 func init() {
-	code, err := ioutil.ReadFile("fixtures/structs.go")
-	if err != nil {
-		panic(err)
-	}
-
-	finder := new(JSONStructFinder)
-
-	specs := finder.Structs(code)
+	finder := NewJSONStructFinder()
+	finder.FindInDir("fixtures")
 
 	specFixtures = NewSpecFixture()
 
+	specs := finder.StructTypeSpecs()
 	for i := range specs {
 		specFixtures.Add(&specs[i])
 	}
