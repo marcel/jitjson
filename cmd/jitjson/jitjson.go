@@ -30,6 +30,9 @@ var (
 	dump        = cli.Command("dump", "Dump auto-generated source code")
 	dumpRootDir = dump.Arg("root-dir", "Directory to start searching for structs from. Defaults to '.'").Default(".").String()
 	dumpFilter  = dump.Flag("filter", "Only dump code from packages matching filter").Short('f').String()
+
+	files        = cli.Command("files", "List json encoder files that have been generated")
+	filesRootDir = files.Arg("root-dir", "Directory to start searching for structs from. Defaults to '.'").Default(".").String()
 )
 
 // TODO
@@ -49,6 +52,8 @@ func main() {
 	case dump.FullCommand():
 		dumpCmd := &DumpCommand{Filter: *dumpFilter}
 		err = dumpCmd.Run(FinderFrom(*dumpRootDir))
+	case files.FullCommand():
+		err = new(FilesCommand).Run(FinderFrom(*filesRootDir))
 	}
 
 	if err != nil {
@@ -144,6 +149,29 @@ func (c *DumpCommand) Run(finder *jitjson.JSONStructFinder) error {
 		}
 		metaCodeGen := jitjson.NewMetaCodeGenerator(structDir)
 		metaCodeGen.WriteTo(os.Stdout)
+	}
+
+	return nil
+}
+
+type FilesCommand struct{}
+
+func (c *FilesCommand) Run(finder *jitjson.JSONStructFinder) error {
+	for _, structDir := range finder.StructDirectories() {
+		metaGen := jitjson.NewMetaCodeGenerator(structDir)
+		if _, err := os.Stat(metaGen.PathToTargetFile()); !os.IsNotExist(err) {
+			currentDir, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+
+			relativePath, err := filepath.Rel(currentDir, metaGen.PathToTargetFile())
+			if err != nil {
+				return err
+			}
+
+			fmt.Println(relativePath)
+		}
 	}
 
 	return nil

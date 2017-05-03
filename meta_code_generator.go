@@ -48,8 +48,12 @@ func (m *MetaCodeGenerator) WriteTo(writer io.Writer) error {
 	return templ.Execute(writer, m.StructDirectory)
 }
 
+func (m *MetaCodeGenerator) PathToTargetFile() string {
+	return filepath.Join(m.Directory, CodeGeneratorTargetFile)
+}
+
 func (m *MetaCodeGenerator) DeleteOutdatedEncoderFile() error {
-	err := os.Remove(filepath.Join(m.Directory, CodeGeneratorTargetFile))
+	err := os.Remove(m.PathToTargetFile())
 
 	if e, ok := err.(*os.PathError); ok && e.Err == syscall.ENOENT {
 		// File didn't exist, no need to propagate as error
