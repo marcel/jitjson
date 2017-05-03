@@ -30,7 +30,7 @@ const (
 type Popularity int
 
 type Album struct {
-	AlbumType        AlbumType        `json:"album_type"`
+	AlbumType        AlbumType        `json:"albumType"`
 	Artists          []Artist         `json:"artists"`
 	AvailableMarkets []ISO31661Alpha2 `json:"available_markets"`
 	Genres           []Genre          `json:"genres"`

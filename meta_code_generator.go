@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 	"text/template"
 	"time"
 )
@@ -47,7 +48,19 @@ func (m *MetaCodeGenerator) WriteTo(writer io.Writer) error {
 	return templ.Execute(writer, m.StructDirectory)
 }
 
+func (m *MetaCodeGenerator) DeleteOutdatedEncoderFile() error {
+	err := os.Remove(filepath.Join(m.Directory, CodeGeneratorTargetFile))
+
+	if e, ok := err.(*os.PathError); ok && e.Err == syscall.ENOENT {
+		// File didn't exist, no need to propagate as error
+		return nil
+	}
+
+	return err
+}
+
 func (m *MetaCodeGenerator) Exec() error {
+	m.DeleteOutdatedEncoderFile()
 	err := m.MakeTempDir()
 	if err != nil {
 		return err
@@ -60,6 +73,9 @@ func (m *MetaCodeGenerator) Exec() error {
 		return err
 	}
 
+	// TODO After generating the json_encoders.go file we should try a 'go build'
+	// and if that returns with a non-zero exit status then the json_encoders
+	// should be deleted and the error should be returned and displayed
 	return exec.Command("go", "run", m.TempFile()).Run()
 }
 
@@ -83,8 +99,7 @@ func (m *MetaCodeGenerator) TempFile() string {
 
 // TODO Needs to either write structEncoders into a file for the project (in
 // order to have no external dependencies), or import it from jitjson
-var tmpl = `
-package main
+var tmpl = `package main
 
 import (
 	"github.com/marcel/jitjson"
@@ -102,7 +117,6 @@ func main() {
 	codeGen.EncoderMethodFor({{.PackageName}}.{{.Name}}{})
 	{{- end  }}
 
-	// fmt.Println(string(codeGen.Bytes()))
 	codeGen.WriteFile()
 }
 `

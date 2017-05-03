@@ -68,5 +68,5 @@ func (s *JSONStructFinderTestSuite) TestFindInDir() {
 	finder.FindInDir("fixtures")
 
 	s.Equal(2, len(finder.StructDirectories()))
-	s.Equal(8, len(finder.StructTypeSpecs()))
+	s.Equal(9, len(finder.StructTypeSpecs()))
 }

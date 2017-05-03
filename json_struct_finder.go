@@ -93,7 +93,7 @@ func (s *JSONStructFinder) findInFile(directoryPath string, info os.FileInfo, er
 		return nil
 	}
 
-	if !strings.HasSuffix(info.Name(), ".go") {
+	if !strings.HasSuffix(info.Name(), ".go") || strings.HasSuffix(info.Name(), "_test.go") {
 		return nil
 	}
 
@@ -174,12 +174,3 @@ func (s *JSONStructFinder) FindInAST(fileNode *ast.File) []StructTypeSpec {
 
 	return structs
 }
-
-// func (s JSONStructFinder) Find(gocode []byte) []StructTypeSpec {
-// 	fileNode, err := parser.ParseFile(s.FileSet, "file name goes here", gocode, parser.AllErrors)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	return s.FindInAST(fileNode)
-// }
