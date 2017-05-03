@@ -12,7 +12,7 @@ func TestJSONJit(t *testing.T) {
 	r, err := json.Marshal(&navigation.ExampleRoute)
 	assert.Nil(t, err)
 
-	routeJSON, err := (&navigation.ExampleRoute).MarshalJSON()
+	routeJSON, err := navigation.ExampleRoute.MarshalJSON()
 	assert.Nil(t, err)
 	assert.Equal(t, string(r), string(routeJSON))
 }
@@ -28,7 +28,7 @@ func BenchmarkJSONWithReflection(b *testing.B) {
 
 func BenchmarkJSONJit(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, err := (&navigation.ExampleRoute).MarshalJSON()
+		_, err := navigation.ExampleRoute.MarshalJSON()
 		if err != nil {
 			b.Error(err)
 		}
