@@ -17,6 +17,7 @@ import (
 var (
 	cli = kingpin.New("jitjson", "Finds structs with json tags and generates efficient (non-reflection) based JSON encoders")
 
+	// TODO Add flag to configure the buffer size for the buffer pool
 	gen        = cli.Command("gen", "Generate json encoders")
 	genRootDir = gen.Arg("root-dir", "Directory to start searching for structs from. Defaults to '.'").Default(".").String()
 

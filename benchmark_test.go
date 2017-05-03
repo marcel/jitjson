@@ -18,19 +18,50 @@ func TestJSONJit(t *testing.T) {
 }
 
 func BenchmarkJSONWithReflection(b *testing.B) {
+	var result []byte
 	for i := 0; i < b.N; i++ {
-		_, err := json.Marshal(&navigation.ExampleRoute)
-		if err != nil {
-			b.Error(err)
-		}
+		result = generateReflectionJSON(b)
 	}
+
+	_ = result
+}
+
+func generateReflectionJSON(b *testing.B) []byte {
+
+	bytes, err := json.Marshal(&navigation.ExampleRoute)
+	if err != nil {
+		b.Error(err)
+	}
+
+	return bytes
 }
 
 func BenchmarkJSONJit(b *testing.B) {
+	var result []byte
 	for i := 0; i < b.N; i++ {
-		_, err := navigation.ExampleRoute.MarshalJSON()
-		if err != nil {
-			b.Error(err)
-		}
+		result = generateJitJSON(b)
 	}
+
+	_ = result
+}
+
+// func BenchmarkJSONJitParallel(b *testing.B) {
+// 	var result []byte
+
+// 	b.RunParallel(func(pb *testing.PB) {
+// 		for pb.Next() {
+// 			result = generateJitJSON(b)
+// 		}
+// 	})
+
+// 	_ = result
+// }
+
+func generateJitJSON(b *testing.B) []byte {
+	bytes, err := navigation.ExampleRoute.MarshalJSON()
+	if err != nil {
+		b.Error(err)
+	}
+
+	return bytes
 }

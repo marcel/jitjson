@@ -34,7 +34,7 @@ func (s *CodeGeneratorTestSuite) TestEncodingBufferStructWrapper() {
 
 	expected :=
 		`type encodingBuffer struct {
-	encoding.Buffer
+	*encoding.Buffer
 }
 
 `
@@ -47,7 +47,13 @@ func (s *CodeGeneratorTestSuite) TestJSONMarshlerInterface() {
 
 	expected :=
 		`func (s SomeStructName) MarshalJSON() ([]byte, error) {
-	buf := encodingBuffer{}
+	underlying := bufferPool.GetBuffer()
+	buf := encodingBuffer{Buffer: underlying}
+	defer func() {
+		underlying.Reset()
+		bufferPool.PutBuffer(underlying)
+	}()
+
 	buf.somestructnameStruct(s)
 	return buf.Bytes(), nil
 }

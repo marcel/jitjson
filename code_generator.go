@@ -32,15 +32,25 @@ func (c *CodeGenerator) ImportDeclaration() {
 	c.WriteString("import \"github.com/marcel/jitjson/encoding\"\n\n")
 }
 
+func (c *CodeGenerator) SetBufferPoolVar() {
+	c.WriteString("var bufferPool = encoding.NewSyncPool(4096)\n\n")
+}
+
 func (c *CodeGenerator) EncodingBufferStructWrapper() {
-	c.WriteString("type encodingBuffer struct {\n\tencoding.Buffer\n}\n\n")
+	c.WriteString("type encodingBuffer struct {\n\t*encoding.Buffer\n}\n\n")
 }
 
 func (c *CodeGenerator) JSONMarshalerInterfaceFor(structName string) {
 	buf := bytes.Buffer{}
 
 	buf.WriteString(fmt.Sprintf("func (s %s) MarshalJSON() ([]byte, error) {\n", structName))
-	buf.WriteString("\tbuf := encodingBuffer{}\n")
+	buf.WriteString("\tunderlying := bufferPool.GetBuffer()\n")
+	buf.WriteString("\tbuf := encodingBuffer{Buffer: underlying}\n")
+	buf.WriteString("\tdefer func() {\n")
+	buf.WriteString("\t\tunderlying.Reset()\n")
+	buf.WriteString("\t\tbufferPool.PutBuffer(underlying)\n")
+	buf.WriteString("\t}()\n\n")
+
 	buf.WriteString(fmt.Sprintf("\tbuf.%sStruct(s)\n", strings.ToLower(structName)))
 	buf.WriteString("\treturn buf.Bytes(), nil\n")
 	buf.WriteString("}\n\n")

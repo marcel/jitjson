@@ -2,12 +2,20 @@ package navigation
 
 import "github.com/marcel/jitjson/encoding"
 
+var bufferPool = encoding.NewSyncPool(4096)
+
 type encodingBuffer struct {
-	encoding.Buffer
+	*encoding.Buffer
 }
 
 func (s Route) MarshalJSON() ([]byte, error) {
-	buf := encodingBuffer{}
+	underlying := bufferPool.GetBuffer()
+	buf := encodingBuffer{Buffer: underlying}
+	defer func() {
+		underlying.Reset()
+		bufferPool.PutBuffer(underlying)
+	}()
+
 	buf.routeStruct(s)
 	return buf.Bytes(), nil
 }
@@ -31,7 +39,13 @@ func (e *encodingBuffer) routeStruct(route Route) {
 }
 
 func (s Leg) MarshalJSON() ([]byte, error) {
-	buf := encodingBuffer{}
+	underlying := bufferPool.GetBuffer()
+	buf := encodingBuffer{Buffer: underlying}
+	defer func() {
+		underlying.Reset()
+		bufferPool.PutBuffer(underlying)
+	}()
+
 	buf.legStruct(s)
 	return buf.Bytes(), nil
 }
@@ -75,7 +89,13 @@ func (e *encodingBuffer) legStruct(leg Leg) {
 }
 
 func (s Step) MarshalJSON() ([]byte, error) {
-	buf := encodingBuffer{}
+	underlying := bufferPool.GetBuffer()
+	buf := encodingBuffer{Buffer: underlying}
+	defer func() {
+		underlying.Reset()
+		bufferPool.PutBuffer(underlying)
+	}()
+
 	buf.stepStruct(s)
 	return buf.Bytes(), nil
 }
@@ -114,7 +134,13 @@ func (e *encodingBuffer) stepStruct(step Step) {
 }
 
 func (s Location) MarshalJSON() ([]byte, error) {
-	buf := encodingBuffer{}
+	underlying := bufferPool.GetBuffer()
+	buf := encodingBuffer{Buffer: underlying}
+	defer func() {
+		underlying.Reset()
+		bufferPool.PutBuffer(underlying)
+	}()
+
 	buf.locationStruct(s)
 	return buf.Bytes(), nil
 }
@@ -133,7 +159,13 @@ func (e *encodingBuffer) locationStruct(location Location) {
 }
 
 func (s Address) MarshalJSON() ([]byte, error) {
-	buf := encodingBuffer{}
+	underlying := bufferPool.GetBuffer()
+	buf := encodingBuffer{Buffer: underlying}
+	defer func() {
+		underlying.Reset()
+		bufferPool.PutBuffer(underlying)
+	}()
+
 	buf.addressStruct(s)
 	return buf.Bytes(), nil
 }

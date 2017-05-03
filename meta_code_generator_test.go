@@ -45,6 +45,7 @@ func main() {
 	codeGen := jitjson.NewCodeGenerator("/path/to/project/src/github.com/marcel/jitson/fixtures/media", "media")
 	codeGen.PackageDeclaration()
 	codeGen.ImportDeclaration()	
+	codeGen.SetBufferPoolVar()
 	codeGen.EncodingBufferStructWrapper()
 	codeGen.JSONMarshalerInterfaceFor("Album")
 	codeGen.EncoderMethodFor(media.Album{})

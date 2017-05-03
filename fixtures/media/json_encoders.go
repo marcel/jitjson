@@ -2,12 +2,20 @@ package media
 
 import "github.com/marcel/jitjson/encoding"
 
+var bufferPool = encoding.NewSyncPool(4096)
+
 type encodingBuffer struct {
-	encoding.Buffer
+	*encoding.Buffer
 }
 
 func (s Album) MarshalJSON() ([]byte, error) {
-	buf := encodingBuffer{}
+	underlying := bufferPool.GetBuffer()
+	buf := encodingBuffer{Buffer: underlying}
+	defer func() {
+		underlying.Reset()
+		bufferPool.PutBuffer(underlying)
+	}()
+
 	buf.albumStruct(s)
 	return buf.Bytes(), nil
 }
@@ -87,7 +95,13 @@ func (e *encodingBuffer) albumStruct(album Album) {
 }
 
 func (s Image) MarshalJSON() ([]byte, error) {
-	buf := encodingBuffer{}
+	underlying := bufferPool.GetBuffer()
+	buf := encodingBuffer{Buffer: underlying}
+	defer func() {
+		underlying.Reset()
+		bufferPool.PutBuffer(underlying)
+	}()
+
 	buf.imageStruct(s)
 	return buf.Bytes(), nil
 }
@@ -110,7 +124,13 @@ func (e *encodingBuffer) imageStruct(image Image) {
 }
 
 func (s Artist) MarshalJSON() ([]byte, error) {
-	buf := encodingBuffer{}
+	underlying := bufferPool.GetBuffer()
+	buf := encodingBuffer{Buffer: underlying}
+	defer func() {
+		underlying.Reset()
+		bufferPool.PutBuffer(underlying)
+	}()
+
 	buf.artistStruct(s)
 	return buf.Bytes(), nil
 }
@@ -147,7 +167,13 @@ func (e *encodingBuffer) artistStruct(artist Artist) {
 }
 
 func (s Track) MarshalJSON() ([]byte, error) {
-	buf := encodingBuffer{}
+	underlying := bufferPool.GetBuffer()
+	buf := encodingBuffer{Buffer: underlying}
+	defer func() {
+		underlying.Reset()
+		bufferPool.PutBuffer(underlying)
+	}()
+
 	buf.trackStruct(s)
 	return buf.Bytes(), nil
 }

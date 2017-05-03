@@ -114,6 +114,7 @@ func main() {
 	codeGen := jitjson.NewCodeGenerator("{{.Directory}}", "{{.Package}}")
 	codeGen.PackageDeclaration()
 	codeGen.ImportDeclaration()	
+	codeGen.SetBufferPoolVar()
 	codeGen.EncodingBufferStructWrapper()	
 
 	{{- range .Specs }}
