@@ -32,6 +32,7 @@ func (c *CodeGenerator) ImportDeclaration() {
 	c.WriteString("import \"github.com/marcel/jitjson/encoding\"\n\n")
 }
 
+// TODO Add func NewEncodingBuffer to wrap bufferPool.GetBuffer()
 func (c *CodeGenerator) SetBufferPoolVar() {
 	c.WriteString("var bufferPool = encoding.NewSyncPool(4096)\n\n")
 }
