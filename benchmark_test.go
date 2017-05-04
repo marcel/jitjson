@@ -27,7 +27,6 @@ func BenchmarkJSONWithReflection(b *testing.B) {
 }
 
 func generateReflectionJSON(b *testing.B) []byte {
-
 	bytes, err := json.Marshal(&navigation.ExampleRoute)
 	if err != nil {
 		b.Error(err)
@@ -45,6 +44,15 @@ func BenchmarkJSONJit(b *testing.B) {
 	_ = result
 }
 
+func generateJitJSON(b *testing.B) []byte {
+	bytes, err := navigation.ExampleRoute.MarshalJSON()
+	if err != nil {
+		b.Error(err)
+	}
+
+	return bytes
+}
+
 // func BenchmarkJSONJitParallel(b *testing.B) {
 // 	var result []byte
 
@@ -56,12 +64,3 @@ func BenchmarkJSONJit(b *testing.B) {
 
 // 	_ = result
 // }
-
-func generateJitJSON(b *testing.B) []byte {
-	bytes, err := navigation.ExampleRoute.MarshalJSON()
-	if err != nil {
-		b.Error(err)
-	}
-
-	return bytes
-}

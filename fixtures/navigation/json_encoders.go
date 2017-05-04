@@ -23,11 +23,13 @@ func (s Route) MarshalJSON() ([]byte, error) {
 func (e *encodingBuffer) routeStruct(route Route) {
   e.OpenBrace()
 
-  e.Attr("summary")
-  e.String(string(route.Summary))
+  // "summary":
+  e.Write([]byte{0x22, 0x73, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x22, 0x3a})
+  e.String(route.Summary)
   e.Comma()
 
-  e.Attr("legs")
+  // "legs":
+  e.Write([]byte{0x22, 0x6c, 0x65, 0x67, 0x73, 0x22, 0x3a})
   e.WriteByte('[')
   for index, element := range route.Legs {
     if index != 0 { e.Comma() }
@@ -53,31 +55,38 @@ func (s Leg) MarshalJSON() ([]byte, error) {
 func (e *encodingBuffer) legStruct(leg Leg) {
   e.OpenBrace()
 
-  e.Attr("distance")
-  e.Int(int(leg.Distance))
+  // "distance":
+  e.Write([]byte{0x22, 0x64, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x22, 0x3a})
+  e.Int(leg.Distance)
   e.Comma()
 
-  e.Attr("duration")
+  // "duration":
+  e.Write([]byte{0x22, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a})
   e.Int64(int64(leg.Duration))
   e.Comma()
 
-  e.Attr("start_address")
+  // "start_address":
+  e.Write([]byte{0x22, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x3a})
   e.addressStruct(leg.StartAddress)
   e.Comma()
 
-  e.Attr("end_address")
+  // "end_address":
+  e.Write([]byte{0x22, 0x65, 0x6e, 0x64, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x3a})
   e.addressStruct(leg.EndAddress)
   e.Comma()
 
-  e.Attr("start_location")
+  // "start_location":
+  e.Write([]byte{0x22, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a})
   e.locationStruct(leg.StartLocation)
   e.Comma()
 
-  e.Attr("end_location")
+  // "end_location":
+  e.Write([]byte{0x22, 0x65, 0x6e, 0x64, 0x5f, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a})
   e.locationStruct(leg.EndLocation)
   e.Comma()
 
-  e.Attr("steps")
+  // "steps":
+  e.Write([]byte{0x22, 0x73, 0x74, 0x65, 0x70, 0x73, 0x22, 0x3a})
   e.WriteByte('[')
   for index, element := range leg.Steps {
     if index != 0 { e.Comma() }
@@ -103,32 +112,39 @@ func (s Step) MarshalJSON() ([]byte, error) {
 func (e *encodingBuffer) stepStruct(step Step) {
   e.OpenBrace()
 
-  e.Attr("distance")
-  e.Int(int(step.Distance))
+  // "distance":
+  e.Write([]byte{0x22, 0x64, 0x69, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x22, 0x3a})
+  e.Int(step.Distance)
   e.Comma()
 
-  e.Attr("duration")
+  // "duration":
+  e.Write([]byte{0x22, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a})
   e.Int64(int64(step.Duration))
   e.Comma()
 
-  e.Attr("start_location")
+  // "start_location":
+  e.Write([]byte{0x22, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a})
   e.locationStruct(step.StartLocation)
   e.Comma()
 
-  e.Attr("end_location")
+  // "end_location":
+  e.Write([]byte{0x22, 0x65, 0x6e, 0x64, 0x5f, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a})
   e.locationStruct(step.EndLocation)
   e.Comma()
 
-  e.Attr("travel_mode")
+  // "travel_mode":
+  e.Write([]byte{0x22, 0x74, 0x72, 0x61, 0x76, 0x65, 0x6c, 0x5f, 0x6d, 0x6f, 0x64, 0x65, 0x22, 0x3a})
   e.String(string(step.TravelMode))
   e.Comma()
 
-  e.Attr("maneuver")
+  // "maneuver":
+  e.Write([]byte{0x22, 0x6d, 0x61, 0x6e, 0x65, 0x75, 0x76, 0x65, 0x72, 0x22, 0x3a})
   e.String(string(step.Maneuver))
   e.Comma()
 
-  e.Attr("instructions")
-  e.String(string(step.Instructions))
+  // "instructions":
+  e.Write([]byte{0x22, 0x69, 0x6e, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x3a})
+  e.String(step.Instructions)
 
   e.CloseBrace()
 }
@@ -148,12 +164,14 @@ func (s Location) MarshalJSON() ([]byte, error) {
 func (e *encodingBuffer) locationStruct(location Location) {
   e.OpenBrace()
 
-  e.Attr("lat")
-  e.String(string(location.Lat))
+  // "lat":
+  e.Write([]byte{0x22, 0x6c, 0x61, 0x74, 0x22, 0x3a})
+  e.String(location.Lat)
   e.Comma()
 
-  e.Attr("lng")
-  e.String(string(location.Lng))
+  // "lng":
+  e.Write([]byte{0x22, 0x6c, 0x6e, 0x67, 0x22, 0x3a})
+  e.String(location.Lng)
 
   e.CloseBrace()
 }
@@ -173,28 +191,34 @@ func (s Address) MarshalJSON() ([]byte, error) {
 func (e *encodingBuffer) addressStruct(address Address) {
   e.OpenBrace()
 
-  e.Attr("number")
-  e.String(string(address.Number))
+  // "number":
+  e.Write([]byte{0x22, 0x6e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x22, 0x3a})
+  e.String(address.Number)
   e.Comma()
 
-  e.Attr("street")
-  e.String(string(address.Street))
+  // "street":
+  e.Write([]byte{0x22, 0x73, 0x74, 0x72, 0x65, 0x65, 0x74, 0x22, 0x3a})
+  e.String(address.Street)
   e.Comma()
 
-  e.Attr("city")
-  e.String(string(address.City))
+  // "city":
+  e.Write([]byte{0x22, 0x63, 0x69, 0x74, 0x79, 0x22, 0x3a})
+  e.String(address.City)
   e.Comma()
 
-  e.Attr("state")
-  e.String(string(address.State))
+  // "state":
+  e.Write([]byte{0x22, 0x73, 0x74, 0x61, 0x74, 0x65, 0x22, 0x3a})
+  e.String(address.State)
   e.Comma()
 
-  e.Attr("zip_code")
-  e.Int(int(address.ZipCode))
+  // "zip_code":
+  e.Write([]byte{0x22, 0x7a, 0x69, 0x70, 0x5f, 0x63, 0x6f, 0x64, 0x65, 0x22, 0x3a})
+  e.Int(address.ZipCode)
   e.Comma()
 
-  e.Attr("country")
-  e.String(string(address.Country))
+  // "country":
+  e.Write([]byte{0x22, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x72, 0x79, 0x22, 0x3a})
+  e.String(address.Country)
 
   e.CloseBrace()
 }

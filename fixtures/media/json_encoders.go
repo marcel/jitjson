@@ -23,11 +23,13 @@ func (s Album) MarshalJSON() ([]byte, error) {
 func (e *encodingBuffer) albumStruct(album Album) {
   e.OpenBrace()
 
-  e.Attr("albumType")
+  // "albumType":
+  e.Write([]byte{0x22, 0x61, 0x6c, 0x62, 0x75, 0x6d, 0x54, 0x79, 0x70, 0x65, 0x22, 0x3a})
   e.String(string(album.AlbumType))
   e.Comma()
 
-  e.Attr("artists")
+  // "artists":
+  e.Write([]byte{0x22, 0x61, 0x72, 0x74, 0x69, 0x73, 0x74, 0x73, 0x22, 0x3a})
   e.WriteByte('[')
   for index, element := range album.Artists {
     if index != 0 { e.Comma() }
@@ -36,7 +38,8 @@ func (e *encodingBuffer) albumStruct(album Album) {
   e.WriteByte(']')
   e.Comma()
 
-  e.Attr("available_markets")
+  // "available_markets":
+  e.Write([]byte{0x22, 0x61, 0x76, 0x61, 0x69, 0x6c, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x6d, 0x61, 0x72, 0x6b, 0x65, 0x74, 0x73, 0x22, 0x3a})
   e.WriteByte('[')
   for index, element := range album.AvailableMarkets {
     if index != 0 { e.Comma() }
@@ -45,7 +48,8 @@ func (e *encodingBuffer) albumStruct(album Album) {
   e.WriteByte(']')
   e.Comma()
 
-  e.Attr("genres")
+  // "genres":
+  e.Write([]byte{0x22, 0x67, 0x65, 0x6e, 0x72, 0x65, 0x73, 0x22, 0x3a})
   e.WriteByte('[')
   for index, element := range album.Genres {
     if index != 0 { e.Comma() }
@@ -54,7 +58,8 @@ func (e *encodingBuffer) albumStruct(album Album) {
   e.WriteByte(']')
   e.Comma()
 
-  e.Attr("images")
+  // "images":
+  e.Write([]byte{0x22, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x73, 0x22, 0x3a})
   e.WriteByte('[')
   for index, element := range album.Images {
     if index != 0 { e.Comma() }
@@ -63,19 +68,23 @@ func (e *encodingBuffer) albumStruct(album Album) {
   e.WriteByte(']')
   e.Comma()
 
-  e.Attr("label")
-  e.String(string(album.Label))
+  // "label":
+  e.Write([]byte{0x22, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x22, 0x3a})
+  e.String(album.Label)
   e.Comma()
 
-  e.Attr("name")
-  e.String(string(album.Name))
+  // "name":
+  e.Write([]byte{0x22, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x3a})
+  e.String(album.Name)
   e.Comma()
 
-  e.Attr("popularity")
+  // "popularity":
+  e.Write([]byte{0x22, 0x70, 0x6f, 0x70, 0x75, 0x6c, 0x61, 0x72, 0x69, 0x74, 0x79, 0x22, 0x3a})
   e.Int(int(album.Popularity))
   e.Comma()
 
-  e.Attr("release_date")
+  // "release_date":
+  e.Write([]byte{0x22, 0x72, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x5f, 0x64, 0x61, 0x74, 0x65, 0x22, 0x3a})
   jsonBytes, err := album.ReleaseDate.MarshalJSON()
   if err != nil {
     panic(err)
@@ -83,7 +92,8 @@ func (e *encodingBuffer) albumStruct(album Album) {
   e.Write(jsonBytes)
   e.Comma()
 
-  e.Attr("tracks")
+  // "tracks":
+  e.Write([]byte{0x22, 0x74, 0x72, 0x61, 0x63, 0x6b, 0x73, 0x22, 0x3a})
   e.WriteByte('[')
   for index, element := range album.Tracks {
     if index != 0 { e.Comma() }
@@ -109,16 +119,19 @@ func (s Image) MarshalJSON() ([]byte, error) {
 func (e *encodingBuffer) imageStruct(image Image) {
   e.OpenBrace()
 
-  e.Attr("height")
-  e.Int(int(image.Height))
+  // "height":
+  e.Write([]byte{0x22, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x3a})
+  e.Int(image.Height)
   e.Comma()
 
-  e.Attr("width")
-  e.Int(int(image.Width))
+  // "width":
+  e.Write([]byte{0x22, 0x77, 0x69, 0x64, 0x74, 0x68, 0x22, 0x3a})
+  e.Int(image.Width)
   e.Comma()
 
-  e.Attr("url")
-  e.String(string(image.URL))
+  // "url":
+  e.Write([]byte{0x22, 0x75, 0x72, 0x6c, 0x22, 0x3a})
+  e.String(image.URL)
 
   e.CloseBrace()
 }
@@ -138,7 +151,8 @@ func (s Artist) MarshalJSON() ([]byte, error) {
 func (e *encodingBuffer) artistStruct(artist Artist) {
   e.OpenBrace()
 
-  e.Attr("genres")
+  // "genres":
+  e.Write([]byte{0x22, 0x67, 0x65, 0x6e, 0x72, 0x65, 0x73, 0x22, 0x3a})
   e.WriteByte('[')
   for index, element := range artist.Genres {
     if index != 0 { e.Comma() }
@@ -147,7 +161,8 @@ func (e *encodingBuffer) artistStruct(artist Artist) {
   e.WriteByte(']')
   e.Comma()
 
-  e.Attr("images")
+  // "images":
+  e.Write([]byte{0x22, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x73, 0x22, 0x3a})
   e.WriteByte('[')
   for index, element := range artist.Images {
     if index != 0 { e.Comma() }
@@ -156,11 +171,13 @@ func (e *encodingBuffer) artistStruct(artist Artist) {
   e.WriteByte(']')
   e.Comma()
 
-  e.Attr("popularity")
-  e.String(string(artist.Name))
+  // "popularity":
+  e.Write([]byte{0x22, 0x70, 0x6f, 0x70, 0x75, 0x6c, 0x61, 0x72, 0x69, 0x74, 0x79, 0x22, 0x3a})
+  e.String(artist.Name)
   e.Comma()
 
-  e.Attr("popularity")
+  // "popularity":
+  e.Write([]byte{0x22, 0x70, 0x6f, 0x70, 0x75, 0x6c, 0x61, 0x72, 0x69, 0x74, 0x79, 0x22, 0x3a})
   e.Int(int(artist.Popularity))
 
   e.CloseBrace()
@@ -181,27 +198,33 @@ func (s Track) MarshalJSON() ([]byte, error) {
 func (e *encodingBuffer) trackStruct(track Track) {
   e.OpenBrace()
 
-  e.Attr("duration")
+  // "duration":
+  e.Write([]byte{0x22, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a})
   e.Int64(int64(track.Duration))
   e.Comma()
 
-  e.Attr("is_explicit")
-  e.Bool(bool(track.IsExplicit))
+  // "is_explicit":
+  e.Write([]byte{0x22, 0x69, 0x73, 0x5f, 0x65, 0x78, 0x70, 0x6c, 0x69, 0x63, 0x69, 0x74, 0x22, 0x3a})
+  e.Bool(track.IsExplicit)
   e.Comma()
 
-  e.Attr("is_playable")
-  e.Bool(bool(track.IsPlayable))
+  // "is_playable":
+  e.Write([]byte{0x22, 0x69, 0x73, 0x5f, 0x70, 0x6c, 0x61, 0x79, 0x61, 0x62, 0x6c, 0x65, 0x22, 0x3a})
+  e.Bool(track.IsPlayable)
   e.Comma()
 
-  e.Attr("number")
-  e.Int(int(track.Number))
+  // "number":
+  e.Write([]byte{0x22, 0x6e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x22, 0x3a})
+  e.Int(track.Number)
   e.Comma()
 
-  e.Attr("preview_url")
-  e.String(string(track.PreviewURL))
+  // "preview_url":
+  e.Write([]byte{0x22, 0x70, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x5f, 0x75, 0x72, 0x6c, 0x22, 0x3a})
+  e.String(track.PreviewURL)
   e.Comma()
 
-  e.Attr("popularity")
+  // "popularity":
+  e.Write([]byte{0x22, 0x70, 0x6f, 0x70, 0x75, 0x6c, 0x61, 0x72, 0x69, 0x74, 0x79, 0x22, 0x3a})
   e.Int(int(track.Popularity))
 
   e.CloseBrace()

@@ -26,7 +26,7 @@ func NewSyncPool(bufSize int) BufferPool {
 		var b bytes.Buffer
 		b.Grow(bufSize)
 
-		return &Buffer{Buffer: b}
+		return NewBufferWithBuffer(b)
 	}
 	newPool.pool = &sync.Pool{}
 	newPool.pool.New = newPool.makeBuffer

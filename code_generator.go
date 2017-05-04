@@ -8,6 +8,7 @@ import (
 	"log"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -146,7 +147,8 @@ func (c *CodeGenerator) fieldEncodingFor(field reflect.StructField) {
 		attrName = strings.ToLower(field.Name)
 	}
 
-	c.WriteString(fmt.Sprintf("\n  e.Attr(\"%s\")\n", attrName))
+	quotedAttr := strconv.Quote(attrName) + ":"
+	c.WriteString(fmt.Sprintf("\n  // %s\n  e.Write(%#v)\n", quotedAttr, []byte(quotedAttr)))
 
 	// TODO Needs to be refactored to recursively support nested collections like
 	// a slice of a slice, etc
@@ -203,9 +205,14 @@ func (c *CodeGenerator) intFieldEncoding(field reflect.StructField) {
 		specializedIntEncoder = "Uint"
 	}
 
-	code := fmt.Sprintf("  e.%s(%s(%s))\n",
-		specializedIntEncoder, strings.ToLower(specializedIntEncoder), c.dispatch(field))
-
+	var code string
+	if field.Type.String() == field.Type.Kind().String() {
+		code = fmt.Sprintf("  e.%s(%s)\n",
+			specializedIntEncoder, c.dispatch(field))
+	} else {
+		code = fmt.Sprintf("  e.%s(%s(%s))\n",
+			specializedIntEncoder, strings.ToLower(specializedIntEncoder), c.dispatch(field))
+	}
 	c.WriteString(code)
 }
 
@@ -290,7 +297,13 @@ func (c *CodeGenerator) sliceFieldEncoding(field reflect.StructField) {
 }
 
 func (c *CodeGenerator) invokeEncoderForFieldType(fieldType string, field reflect.StructField) {
-	code := fmt.Sprintf("  e.%s(%s(%s))\n", fieldType, strings.ToLower(fieldType), c.dispatch(field))
+	var code string
+
+	if field.Type.String() == field.Type.Kind().String() {
+		code = fmt.Sprintf("  e.%s(%s)\n", fieldType, c.dispatch(field))
+	} else {
+		code = fmt.Sprintf("  e.%s(%s(%s))\n", fieldType, strings.ToLower(fieldType), c.dispatch(field))
+	}
 	c.WriteString(code)
 }
 
