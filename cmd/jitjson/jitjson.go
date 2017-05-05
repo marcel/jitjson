@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"go/ast"
+	goast "go/ast"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,6 +12,7 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/marcel/jitjson"
+	jitast "github.com/marcel/jitjson/ast"
 )
 
 var (
@@ -62,8 +63,8 @@ func main() {
 	}
 }
 
-func FinderFrom(rootDir string) *jitjson.JSONStructFinder {
-	finder := jitjson.NewJSONStructFinder()
+func FinderFrom(rootDir string) *jitast.JSONStructFinder {
+	finder := jitast.NewJSONStructFinder()
 
 	err := finder.FindInDir(rootDir)
 	if err != nil {
@@ -74,12 +75,12 @@ func FinderFrom(rootDir string) *jitjson.JSONStructFinder {
 }
 
 type Command interface {
-	Run(*jitjson.JSONStructFinder) error
+	Run(*jitast.JSONStructFinder) error
 }
 
 type GenCommand struct{}
 
-func (c *GenCommand) Run(finder *jitjson.JSONStructFinder) error {
+func (c *GenCommand) Run(finder *jitast.JSONStructFinder) error {
 	for _, structDir := range finder.StructDirectories() {
 		metaCodeGen := jitjson.NewMetaCodeGenerator(structDir)
 
@@ -96,13 +97,13 @@ type ListCommand struct {
 	Full bool
 }
 
-func (c *ListCommand) Run(finder *jitjson.JSONStructFinder) error {
+func (c *ListCommand) Run(finder *jitast.JSONStructFinder) error {
 	for _, dirs := range finder.StructDirectories() {
 		fmt.Println(filepath.Join(dirs.PackageRoot, dirs.Package))
 		for _, spec := range dirs.Specs {
 			fmt.Printf("\t%s.%s\n", dirs.Package, spec.Name())
 			if c.Full {
-				structType, _ := spec.Type.(*ast.StructType)
+				structType, _ := spec.Type.(*goast.StructType)
 				for _, field := range structType.Fields.List {
 					if len(field.Names) == 0 {
 						continue
@@ -124,7 +125,7 @@ func (c *ListCommand) Run(finder *jitjson.JSONStructFinder) error {
 
 type CleanCommand struct{}
 
-func (c *CleanCommand) Run(finder *jitjson.JSONStructFinder) error {
+func (c *CleanCommand) Run(finder *jitast.JSONStructFinder) error {
 	for _, structDir := range finder.StructDirectories() {
 		metaGen := jitjson.NewMetaCodeGenerator(structDir)
 		err := metaGen.DeleteOutdatedEncoderFile()
@@ -141,7 +142,7 @@ type DumpCommand struct {
 	Filter string
 }
 
-func (c *DumpCommand) Run(finder *jitjson.JSONStructFinder) error {
+func (c *DumpCommand) Run(finder *jitast.JSONStructFinder) error {
 	for _, structDir := range finder.StructDirectories() {
 		if c.Filter != "" {
 			if !strings.Contains(structDir.Directory, c.Filter) {
@@ -157,7 +158,7 @@ func (c *DumpCommand) Run(finder *jitjson.JSONStructFinder) error {
 
 type FilesCommand struct{}
 
-func (c *FilesCommand) Run(finder *jitjson.JSONStructFinder) error {
+func (c *FilesCommand) Run(finder *jitast.JSONStructFinder) error {
 	for _, structDir := range finder.StructDirectories() {
 		metaGen := jitjson.NewMetaCodeGenerator(structDir)
 		if _, err := os.Stat(metaGen.PathToTargetFile()); !os.IsNotExist(err) {

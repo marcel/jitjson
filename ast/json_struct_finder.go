@@ -1,6 +1,7 @@
-package jitjson
+package ast
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -48,6 +49,10 @@ type StructDirectory struct {
 	Specs       []StructTypeSpec
 }
 
+func (s *StructDirectory) ImportPath() string {
+	return filepath.Join(s.PackageRoot, s.Package)
+}
+
 func NewJSONStructFinder() *JSONStructFinder {
 	finder := new(JSONStructFinder)
 
@@ -58,6 +63,44 @@ func NewJSONStructFinder() *JSONStructFinder {
 	finder.structDirectories = make(map[string]StructDirectory)
 
 	return finder
+}
+
+var (
+	errorPrefix              = "FindJSONStructFor:"
+	ErrGoPathUndefined       = fmt.Errorf("%s $GOPATH is undefined", errorPrefix)
+	ErrNonExistantSearchPath = func(path string) error {
+		return fmt.Errorf("%s Search path '%s' does not exist", errorPrefix, path)
+	}
+	ErrNonExistantJSONStruct = func(importPath string, structName string) error {
+		return fmt.Errorf("%s Could not find JSON struct spec for %s.%s{}", errorPrefix, importPath, structName)
+	}
+)
+
+func FindJSONStructFor(importPath string, name string) (*StructTypeSpec, error) {
+	goPath := os.Getenv("GOPATH")
+	if goPath == "" {
+		return nil, ErrGoPathUndefined
+	}
+
+	rootDir := filepath.Join(goPath, "src", importPath)
+	if _, err := os.Stat(rootDir); os.IsNotExist(err) {
+		return nil, ErrNonExistantSearchPath(rootDir)
+	}
+
+	finder := NewJSONStructFinder()
+	finder.FindInDir(rootDir)
+
+	for _, structDir := range finder.StructDirectories() {
+		if structDir.ImportPath() == importPath {
+			for _, typeSpec := range structDir.Specs {
+				if typeSpec.Name() == name {
+					return &typeSpec, nil
+				}
+			}
+		}
+	}
+
+	return nil, ErrNonExistantJSONStruct(importPath, name)
 }
 
 func (s *JSONStructFinder) StructDirectories() []StructDirectory {

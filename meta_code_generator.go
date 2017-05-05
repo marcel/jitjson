@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"text/template"
 	"time"
+
+	"github.com/marcel/jitjson/ast"
 )
 
 type FileSystemInterface interface {
@@ -54,13 +56,13 @@ func (f fileSystem) ExecGo(file string) error {
 var DefaultFileSystemInterface = fileSystem{}
 
 type MetaCodeGenerator struct {
-	StructDirectory
+	ast.StructDirectory
 	fileSystem  FileSystemInterface
 	tempDirName string
 	bytes.Buffer
 }
 
-func NewMetaCodeGenerator(structDir StructDirectory) *MetaCodeGenerator {
+func NewMetaCodeGenerator(structDir ast.StructDirectory) *MetaCodeGenerator {
 	generator := new(MetaCodeGenerator)
 
 	generator.StructDirectory = structDir

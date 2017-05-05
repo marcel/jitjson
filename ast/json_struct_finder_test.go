@@ -1,6 +1,7 @@
-package jitjson
+package ast
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -65,8 +66,39 @@ func (s *JSONStructFinderTestSuite) TestFindInDir() {
 	s.Equal(0, len(finder.StructDirectories()))
 	s.Equal(0, len(finder.StructTypeSpecs()))
 
-	finder.FindInDir("fixtures")
+	finder.FindInDir("../fixtures")
 
 	s.Equal(2, len(finder.StructDirectories()))
 	s.Equal(9, len(finder.StructTypeSpecs()))
+}
+
+func (s *JSONStructFinderTestSuite) TestFindJSONStructFor() {
+	// Golden path: Struct exists
+	importPath := "github.com/marcel/jitjson/fixtures/media"
+	structName := "Album"
+	jsonStruct, err := FindJSONStructFor(importPath, structName)
+	s.Nil(err)
+	s.Equal(structName, jsonStruct.Name())
+	s.Equal("media", jsonStruct.PackageName)
+
+	// Error: Import path does not exist
+	jsonStruct, err = FindJSONStructFor(importPath+"/does/not/exist", structName)
+	s.Nil(jsonStruct)
+	// N.B. We just check error message substring  because we don't want to reimplement the
+	// full path resolution in the code
+	s.Contains(err.Error(), "Search path")
+
+	// Error: Struct does not exist
+	jsonStruct, err = FindJSONStructFor(importPath, structName+"DoesNotExist")
+	s.Nil(jsonStruct)
+	s.Equal(ErrNonExistantJSONStruct(importPath, structName+"DoesNotExist"), err)
+
+	// Error: GOPATH is not defined
+	originalGoPathVal := os.Getenv("GOPATH")
+	defer os.Setenv("GOPATH", originalGoPathVal)
+
+	os.Setenv("GOPATH", "")
+	jsonStruct, err = FindJSONStructFor(importPath, structName)
+	s.Nil(jsonStruct)
+	s.Equal(ErrGoPathUndefined, err)
 }

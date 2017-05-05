@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/marcel/jitjson/ast"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -101,12 +102,15 @@ func TestMetaCodeGeneratorTestSuite(t *testing.T) {
 }
 
 func (s *MetaCodeGeneratorTestSuite) SetupTest() {
-	structDir := StructDirectory{
+	spec, err := ast.FindJSONStructFor("github.com/marcel/jitjson/fixtures/media", "Album")
+	s.Nil(err)
+
+	structDir := ast.StructDirectory{
 		ProjectRoot: "/path/to/project/src/github.com/marcel/jitson",
 		PackageRoot: "github.com/marcel/jitjson/fixtures",
 		Package:     "media",
 		Directory:   "/path/to/project/src/github.com/marcel/jitson/fixtures/media",
-		Specs:       []StructTypeSpec{*Spec("Album")},
+		Specs:       []ast.StructTypeSpec{*spec},
 	}
 
 	s.generator = NewMetaCodeGenerator(structDir)

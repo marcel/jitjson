@@ -1,4 +1,4 @@
-package jitjson
+package ast
 
 import (
 	"go/ast"
