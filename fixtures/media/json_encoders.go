@@ -25,7 +25,7 @@ func (e *encodingBuffer) albumStruct(album Album) {
 
   // "albumType":
   e.Write([]byte{0x22, 0x61, 0x6c, 0x62, 0x75, 0x6d, 0x54, 0x79, 0x70, 0x65, 0x22, 0x3a})
-  e.String(string(album.AlbumType))
+  e.Quote(string(album.AlbumType))
   e.Comma()
 
   // "artists":
@@ -43,7 +43,7 @@ func (e *encodingBuffer) albumStruct(album Album) {
   e.WriteByte('[')
   for index, element := range album.AvailableMarkets {
     if index != 0 { e.Comma() }
-    e.String(string(element))
+    e.Quote(string(element))
   }
   e.WriteByte(']')
   e.Comma()
@@ -53,7 +53,7 @@ func (e *encodingBuffer) albumStruct(album Album) {
   e.WriteByte('[')
   for index, element := range album.Genres {
     if index != 0 { e.Comma() }
-    e.String(string(element))
+    e.Quote(string(element))
   }
   e.WriteByte(']')
   e.Comma()
@@ -70,12 +70,12 @@ func (e *encodingBuffer) albumStruct(album Album) {
 
   // "label":
   e.Write([]byte{0x22, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x22, 0x3a})
-  e.String(album.Label)
+  e.Quote(album.Label)
   e.Comma()
 
   // "name":
   e.Write([]byte{0x22, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x3a})
-  e.String(album.Name)
+  e.Quote(album.Name)
   e.Comma()
 
   // "popularity":
@@ -131,7 +131,7 @@ func (e *encodingBuffer) imageStruct(image Image) {
 
   // "url":
   e.Write([]byte{0x22, 0x75, 0x72, 0x6c, 0x22, 0x3a})
-  e.String(image.URL)
+  e.Quote(image.URL)
 
   e.CloseBrace()
 }
@@ -156,7 +156,7 @@ func (e *encodingBuffer) artistStruct(artist Artist) {
   e.WriteByte('[')
   for index, element := range artist.Genres {
     if index != 0 { e.Comma() }
-    e.String(string(element))
+    e.Quote(string(element))
   }
   e.WriteByte(']')
   e.Comma()
@@ -173,7 +173,7 @@ func (e *encodingBuffer) artistStruct(artist Artist) {
 
   // "popularity":
   e.Write([]byte{0x22, 0x70, 0x6f, 0x70, 0x75, 0x6c, 0x61, 0x72, 0x69, 0x74, 0x79, 0x22, 0x3a})
-  e.String(artist.Name)
+  e.Quote(artist.Name)
   e.Comma()
 
   // "popularity":
@@ -205,12 +205,12 @@ func (e *encodingBuffer) trackStruct(track Track) {
 
   // "is_explicit":
   e.Write([]byte{0x22, 0x69, 0x73, 0x5f, 0x65, 0x78, 0x70, 0x6c, 0x69, 0x63, 0x69, 0x74, 0x22, 0x3a})
-  e.Bool(track.IsExplicit)
+  e.Bool(bool(track.IsExplicit))
   e.Comma()
 
   // "is_playable":
   e.Write([]byte{0x22, 0x69, 0x73, 0x5f, 0x70, 0x6c, 0x61, 0x79, 0x61, 0x62, 0x6c, 0x65, 0x22, 0x3a})
-  e.Bool(track.IsPlayable)
+  e.Bool(bool(track.IsPlayable))
   e.Comma()
 
   // "number":
@@ -220,7 +220,7 @@ func (e *encodingBuffer) trackStruct(track Track) {
 
   // "preview_url":
   e.Write([]byte{0x22, 0x70, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x5f, 0x75, 0x72, 0x6c, 0x22, 0x3a})
-  e.String(track.PreviewURL)
+  e.Quote(track.PreviewURL)
   e.Comma()
 
   // "popularity":

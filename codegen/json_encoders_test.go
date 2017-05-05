@@ -108,7 +108,7 @@ func (s *JSONEncodersTestSuite) TestEncoderMethodFor() {
 
   // "some_bool":
   e.Write([]byte{0x22, 0x73, 0x6f, 0x6d, 0x65, 0x5f, 0x62, 0x6f, 0x6f, 0x6c, 0x22, 0x3a})
-  e.Bool(testJSONStruct.SomeBool)
+  e.Bool(bool(testJSONStruct.SomeBool))
   e.Comma()
 
   // "some_int":
@@ -173,7 +173,7 @@ func (s *JSONEncodersTestSuite) TestEncoderMethodFor() {
 
   // "some_string":
   e.Write([]byte{0x22, 0x73, 0x6f, 0x6d, 0x65, 0x5f, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x22, 0x3a})
-  e.String(testJSONStruct.SomeString)
+  e.Quote(testJSONStruct.SomeString)
   e.Comma()
 
   // "another_struct":
@@ -196,14 +196,14 @@ func (s *JSONEncodersTestSuite) TestEncoderMethodFor() {
   e.WriteByte('[')
   for index, element := range testJSONStruct.SomeArray {
     if index != 0 { e.Comma() }
-    e.String(string(element))
+    e.Quote(string(element))
   }
   e.WriteByte(']')
   e.Comma()
 
   // "nonameoverride":
   e.Write([]byte{0x22, 0x6e, 0x6f, 0x6e, 0x61, 0x6d, 0x65, 0x6f, 0x76, 0x65, 0x72, 0x72, 0x69, 0x64, 0x65, 0x22, 0x3a})
-  e.String(testJSONStruct.NoNameOverride)
+  e.Quote(testJSONStruct.NoNameOverride)
   e.Comma()
 
   // "implements_marshaler":

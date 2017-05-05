@@ -176,7 +176,7 @@ func (c *JSONEncoders) dispatch(field reflect.StructField) string {
 }
 
 func (c *JSONEncoders) stringFieldEncoding(field reflect.StructField) {
-	c.invokeEncoderForFieldType("String", field)
+	c.invokeEncoderForFieldType("Quote", field)
 }
 
 func (c *JSONEncoders) intFieldEncoding(field reflect.StructField) {
@@ -287,8 +287,14 @@ func (c *JSONEncoders) sliceFieldEncoding(field reflect.StructField) {
 		code := fmt.Sprintf("    e.%sStruct(element)\n", structName)
 		c.WriteString(code)
 	default:
-		encoderFromKind := strings.Title(elementType.Kind().String())
-		code := fmt.Sprintf("    e.%s(%s(element))\n", encoderFromKind, strings.ToLower(encoderFromKind))
+		var code string
+		// TODO get rid of this special case to work around Quote() asymetry
+		if elementType.Kind() == reflect.String {
+			code = "    e.Quote(string(element))\n"
+		} else {
+			encoderFromKind := strings.Title(elementType.Kind().String())
+			code = fmt.Sprintf("    e.%s(%s(element))\n", encoderFromKind, strings.ToLower(encoderFromKind))
+		}
 		c.WriteString(code)
 	}
 
@@ -299,8 +305,12 @@ func (c *JSONEncoders) sliceFieldEncoding(field reflect.StructField) {
 func (c *JSONEncoders) invokeEncoderForFieldType(fieldType string, field reflect.StructField) {
 	var code string
 
-	if field.Type.String() == field.Type.Kind().String() {
-		code = fmt.Sprintf("  e.%s(%s)\n", fieldType, c.dispatch(field))
+	if field.Type.Kind() == reflect.String {
+		if field.Type.String() == field.Type.Kind().String() {
+			code = fmt.Sprintf("  e.%s(%s)\n", fieldType, c.dispatch(field))
+		} else {
+			code = fmt.Sprintf("  e.%s(string(%s))\n", fieldType, c.dispatch(field))
+		}
 	} else {
 		code = fmt.Sprintf("  e.%s(%s(%s))\n", fieldType, strings.ToLower(fieldType), c.dispatch(field))
 	}

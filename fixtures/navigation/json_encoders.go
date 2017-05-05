@@ -25,7 +25,7 @@ func (e *encodingBuffer) routeStruct(route Route) {
 
   // "summary":
   e.Write([]byte{0x22, 0x73, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x22, 0x3a})
-  e.String(route.Summary)
+  e.Quote(route.Summary)
   e.Comma()
 
   // "legs":
@@ -134,17 +134,17 @@ func (e *encodingBuffer) stepStruct(step Step) {
 
   // "travel_mode":
   e.Write([]byte{0x22, 0x74, 0x72, 0x61, 0x76, 0x65, 0x6c, 0x5f, 0x6d, 0x6f, 0x64, 0x65, 0x22, 0x3a})
-  e.String(string(step.TravelMode))
+  e.Quote(string(step.TravelMode))
   e.Comma()
 
   // "maneuver":
   e.Write([]byte{0x22, 0x6d, 0x61, 0x6e, 0x65, 0x75, 0x76, 0x65, 0x72, 0x22, 0x3a})
-  e.String(string(step.Maneuver))
+  e.Quote(string(step.Maneuver))
   e.Comma()
 
   // "instructions":
   e.Write([]byte{0x22, 0x69, 0x6e, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x3a})
-  e.String(step.Instructions)
+  e.Quote(step.Instructions)
 
   e.CloseBrace()
 }
@@ -166,12 +166,12 @@ func (e *encodingBuffer) locationStruct(location Location) {
 
   // "lat":
   e.Write([]byte{0x22, 0x6c, 0x61, 0x74, 0x22, 0x3a})
-  e.String(location.Lat)
+  e.Quote(location.Lat)
   e.Comma()
 
   // "lng":
   e.Write([]byte{0x22, 0x6c, 0x6e, 0x67, 0x22, 0x3a})
-  e.String(location.Lng)
+  e.Quote(location.Lng)
 
   e.CloseBrace()
 }
@@ -193,22 +193,22 @@ func (e *encodingBuffer) addressStruct(address Address) {
 
   // "number":
   e.Write([]byte{0x22, 0x6e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x22, 0x3a})
-  e.String(address.Number)
+  e.Quote(address.Number)
   e.Comma()
 
   // "street":
   e.Write([]byte{0x22, 0x73, 0x74, 0x72, 0x65, 0x65, 0x74, 0x22, 0x3a})
-  e.String(address.Street)
+  e.Quote(address.Street)
   e.Comma()
 
   // "city":
   e.Write([]byte{0x22, 0x63, 0x69, 0x74, 0x79, 0x22, 0x3a})
-  e.String(address.City)
+  e.Quote(address.City)
   e.Comma()
 
   // "state":
   e.Write([]byte{0x22, 0x73, 0x74, 0x61, 0x74, 0x65, 0x22, 0x3a})
-  e.String(address.State)
+  e.Quote(address.State)
   e.Comma()
 
   // "zip_code":
@@ -218,7 +218,7 @@ func (e *encodingBuffer) addressStruct(address Address) {
 
   // "country":
   e.Write([]byte{0x22, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x72, 0x79, 0x22, 0x3a})
-  e.String(address.Country)
+  e.Quote(address.Country)
 
   e.CloseBrace()
 }

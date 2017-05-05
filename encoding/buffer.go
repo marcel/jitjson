@@ -11,10 +11,12 @@ type Buffer struct {
 	scratchCap int
 }
 
+var defaultScratchCap = 1024
+
 func NewBufferWithBuffer(b bytes.Buffer) *Buffer {
 	buf := new(Buffer)
 	buf.Buffer = b
-	buf.scratchCap = 1024
+	buf.scratchCap = defaultScratchCap
 	buf.scratch = make([]byte, buf.scratchCap)
 
 	return buf
@@ -57,7 +59,7 @@ func init() {
 }
 
 func (e *Buffer) Int64(i int64) {
-	if i <= intCacheSize && i > 0 {
+	if i < intCacheSize && i > 0 {
 		e.WriteString(encodedIntCache[i])
 		return
 	}
@@ -81,17 +83,12 @@ func (e *Buffer) Int8(i int8) {
 	e.Int64(int64(i))
 }
 
-func (e *Buffer) String(s string) {
-	e.Quote(s)
-}
-
-func (e *Buffer) StringWithComma(s string) {
-	offset := e.quote(s)
-	e.scratch[offset] = ','
-	e.Write(e.scratch[:offset+1])
-}
-
 func (e *Buffer) Uint64(ui uint64) {
+	i := int64(ui)
+	if i <= intCacheSize && i > 0 {
+		e.WriteString(encodedIntCache[i])
+		return
+	}
 	encoded := strconv.AppendUint(e.scratch[:0], ui, 10)
 	e.Write(encoded)
 }
@@ -115,6 +112,8 @@ func (e *Buffer) Uint(ui uint) {
 // N.B. We aren't using WriteByte + WriteString + WriteByte or
 // strconv.AppendQuote to avoid overhead of memory allocation and
 // unecessary calls to bytes.Buffer.Grow
+//
+// TODO This should escape quotes to avoid json syntax errors
 func (e *Buffer) Quote(s string) {
 	strLen := len(s)
 	if strLen > e.scratchCap {
@@ -142,12 +141,6 @@ func (e *Buffer) quote(s string) int {
 
 func (e *Buffer) Comma() {
 	e.WriteByte(',')
-}
-
-func (e *Buffer) Attr(name string) {
-	offset := e.quote(name)
-	e.scratch[offset] = ':'
-	e.Write(e.scratch[:offset+1])
 }
 
 func (e *Buffer) OpenBrace() {
