@@ -4,11 +4,21 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/marcel/jitjson/fixtures/media"
 	"github.com/marcel/jitjson/fixtures/navigation"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestJSONJit(t *testing.T) {
+func TestJSONJitMedia(t *testing.T) {
+	r, err := json.Marshal(&media.ExampleAlbum)
+	assert.Nil(t, err)
+
+	albumJSON, err := media.ExampleAlbum.MarshalJSON()
+	assert.Nil(t, err)
+	assert.Equal(t, string(r), string(albumJSON))
+}
+
+func TestJSONJitNav(t *testing.T) {
 	r, err := json.Marshal(&navigation.ExampleRoute)
 	assert.Nil(t, err)
 
@@ -17,40 +27,32 @@ func TestJSONJit(t *testing.T) {
 	assert.Equal(t, string(r), string(routeJSON))
 }
 
-func BenchmarkJSONWithReflection(b *testing.B) {
+func BenchmarkJSONJitMedia(b *testing.B) {
 	var result []byte
 	for i := 0; i < b.N; i++ {
-		result = generateReflectionJSON(b)
+
+		bytes, err := media.ExampleAlbum.MarshalJSON()
+		if err != nil {
+			b.Error(err)
+		}
+		result = bytes
 	}
 
 	_ = result
 }
 
-func generateReflectionJSON(b *testing.B) []byte {
-	bytes, err := json.Marshal(&navigation.ExampleRoute)
-	if err != nil {
-		b.Error(err)
-	}
-
-	return bytes
-}
-
-func BenchmarkJSONJit(b *testing.B) {
+func BenchmarkJSONJitNav(b *testing.B) {
 	var result []byte
 	for i := 0; i < b.N; i++ {
-		result = generateJitJSON(b)
+
+		bytes, err := navigation.ExampleRoute.MarshalJSON()
+		if err != nil {
+			b.Error(err)
+		}
+		result = bytes
 	}
 
 	_ = result
-}
-
-func generateJitJSON(b *testing.B) []byte {
-	bytes, err := navigation.ExampleRoute.MarshalJSON()
-	if err != nil {
-		b.Error(err)
-	}
-
-	return bytes
 }
 
 // func BenchmarkJSONJitParallel(b *testing.B) {
@@ -58,7 +60,7 @@ func generateJitJSON(b *testing.B) []byte {
 
 // 	b.RunParallel(func(pb *testing.PB) {
 // 		for pb.Next() {
-// 			result = generateJitJSON(b)
+// 			result = generateNavJitJSON(b)
 // 		}
 // 	})
 
