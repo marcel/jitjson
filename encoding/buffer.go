@@ -47,7 +47,20 @@ func (e *Buffer) Float32(f float32) {
 	e.Float64(float64(f))
 }
 
+var intCacheSize int64 = 102400
+var encodedIntCache = make([]string, intCacheSize)
+
+func init() {
+	for i := 0; i < int(intCacheSize); i++ {
+		encodedIntCache[i] = strconv.Itoa(i)
+	}
+}
+
 func (e *Buffer) Int64(i int64) {
+	if i <= intCacheSize && i > 0 {
+		e.WriteString(encodedIntCache[i])
+		return
+	}
 	encoded := strconv.AppendInt(e.scratch[:0], i, 10)
 	e.Write(encoded)
 }
