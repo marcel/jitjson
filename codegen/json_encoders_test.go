@@ -1,4 +1,4 @@
-package jitjson
+package codegen
 
 import (
 	"testing"
@@ -6,30 +6,30 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type CodeGeneratorTestSuite struct {
+type JSONEncodersTestSuite struct {
 	suite.Suite
-	generator *CodeGenerator
+	generator *JSONEncoders
 }
 
-func TestCodeGeneratorTestSuite(t *testing.T) {
-	suite.Run(t, new(CodeGeneratorTestSuite))
+func TestJSONEncodersTestSuite(t *testing.T) {
+	suite.Run(t, new(JSONEncodersTestSuite))
 }
 
-func (s *CodeGeneratorTestSuite) SetupTest() {
-	s.generator = NewCodeGenerator("somedir", "somepackage")
+func (s *JSONEncodersTestSuite) SetupTest() {
+	s.generator = NewJSONEncoders("somedir", "somepackage")
 }
 
-func (s *CodeGeneratorTestSuite) TestPackageDeclaration() {
+func (s *JSONEncodersTestSuite) TestPackageDeclaration() {
 	s.generator.PackageDeclaration()
 	s.Equal("package somepackage\n\n", s.generator.String())
 }
 
-func (s *CodeGeneratorTestSuite) TestImportDeclaration() {
+func (s *JSONEncodersTestSuite) TestImportDeclaration() {
 	s.generator.ImportDeclaration()
 	s.Equal("import \"github.com/marcel/jitjson/encoding\"\n\n", s.generator.String())
 }
 
-func (s *CodeGeneratorTestSuite) TestEncodingBufferStructWrapper() {
+func (s *JSONEncodersTestSuite) TestEncodingBufferStructWrapper() {
 	s.generator.EncodingBufferStructWrapper()
 
 	expected :=
@@ -42,7 +42,7 @@ func (s *CodeGeneratorTestSuite) TestEncodingBufferStructWrapper() {
 	s.Equal(expected, s.generator.String())
 }
 
-func (s *CodeGeneratorTestSuite) TestJSONMarshlerInterface() {
+func (s *JSONEncodersTestSuite) TestJSONMarshlerInterface() {
 	s.generator.JSONMarshalerInterfaceFor("SomeStructName")
 
 	expected :=
@@ -99,7 +99,7 @@ func (i ImplementsMarshaler) MarshalJSON() ([]byte, error) {
 	return []byte{}, nil
 }
 
-func (s *CodeGeneratorTestSuite) TestEncoderMethodFor() {
+func (s *JSONEncodersTestSuite) TestEncoderMethodFor() {
 	jsonStruct := TestJSONStruct{}
 
 	expected :=

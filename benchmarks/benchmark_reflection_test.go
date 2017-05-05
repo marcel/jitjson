@@ -8,10 +8,10 @@ import (
 	"github.com/marcel/jitjson/fixtures/navigation"
 )
 
-func BenchmarkJSONReflectionNav(b *testing.B) {
+func BenchmarkJSONReflectionMedia(b *testing.B) {
 	var result []byte
 	for i := 0; i < b.N; i++ {
-		bytes, err := json.Marshal(&navigation.ExampleRoute)
+		bytes, err := json.Marshal(&media.ExampleAlbum)
 		if err != nil {
 			b.Error(err)
 		}
@@ -22,10 +22,10 @@ func BenchmarkJSONReflectionNav(b *testing.B) {
 	_ = result
 }
 
-func BenchmarkJSONReflectionMedia(b *testing.B) {
+func BenchmarkJSONReflectionNav(b *testing.B) {
 	var result []byte
 	for i := 0; i < b.N; i++ {
-		bytes, err := json.Marshal(&media.ExampleAlbum)
+		bytes, err := json.Marshal(&navigation.ExampleRoute)
 		if err != nil {
 			b.Error(err)
 		}

@@ -1,4 +1,4 @@
-package jitjson
+package codegen
 
 import (
 	"bytes"
@@ -55,15 +55,15 @@ func (f fileSystem) ExecGo(file string) error {
 
 var DefaultFileSystemInterface = fileSystem{}
 
-type MetaCodeGenerator struct {
+type MetaJSONEncoders struct {
 	ast.StructDirectory
 	fileSystem  FileSystemInterface
 	tempDirName string
 	bytes.Buffer
 }
 
-func NewMetaCodeGenerator(structDir ast.StructDirectory) *MetaCodeGenerator {
-	generator := new(MetaCodeGenerator)
+func NewMetaJSONEncoders(structDir ast.StructDirectory) *MetaJSONEncoders {
+	generator := new(MetaJSONEncoders)
 
 	generator.StructDirectory = structDir
 	generator.fileSystem = DefaultFileSystemInterface
@@ -72,7 +72,7 @@ func NewMetaCodeGenerator(structDir ast.StructDirectory) *MetaCodeGenerator {
 	return generator
 }
 
-func (m *MetaCodeGenerator) WriteFile() error {
+func (m *MetaJSONEncoders) WriteFile() error {
 	file, err := m.fileSystem.Create(m.TempFile())
 	if err != nil {
 		return err
@@ -84,21 +84,21 @@ func (m *MetaCodeGenerator) WriteFile() error {
 
 var tempDirFileMode os.FileMode = 0700
 
-func (m *MetaCodeGenerator) MakeTempDir() error {
+func (m *MetaJSONEncoders) MakeTempDir() error {
 	return m.fileSystem.MkdirAll(m.tempDirName, tempDirFileMode)
 }
 
-func (m *MetaCodeGenerator) WriteTo(writer io.Writer) error {
+func (m *MetaJSONEncoders) WriteTo(writer io.Writer) error {
 	templ := template.Must(template.New("gen_encoders").Parse(tmpl))
 
 	return templ.Execute(writer, m.StructDirectory)
 }
 
-func (m *MetaCodeGenerator) PathToTargetFile() string {
-	return filepath.Join(m.Directory, CodeGeneratorTargetFile)
+func (m *MetaJSONEncoders) PathToTargetFile() string {
+	return filepath.Join(m.Directory, JSONEncodersTargetFile)
 }
 
-func (m *MetaCodeGenerator) DeleteOutdatedEncoderFile() error {
+func (m *MetaJSONEncoders) DeleteOutdatedEncoderFile() error {
 	err := m.fileSystem.Remove(m.PathToTargetFile())
 
 	if e, ok := err.(*os.PathError); ok && e.Err == syscall.ENOENT {
@@ -109,7 +109,7 @@ func (m *MetaCodeGenerator) DeleteOutdatedEncoderFile() error {
 	return err
 }
 
-func (m *MetaCodeGenerator) Exec() error {
+func (m *MetaJSONEncoders) Exec() error {
 	m.DeleteOutdatedEncoderFile()
 	err := m.MakeTempDir()
 	if err != nil {
@@ -129,7 +129,7 @@ func (m *MetaCodeGenerator) Exec() error {
 	return m.fileSystem.ExecGo(m.TempFile())
 }
 
-func (m *MetaCodeGenerator) CleanUp() error {
+func (m *MetaJSONEncoders) CleanUp() error {
 	err := m.fileSystem.RmRF(m.tempDirName)
 	if err != nil {
 		return err
@@ -138,13 +138,13 @@ func (m *MetaCodeGenerator) CleanUp() error {
 	return nil
 }
 
-func (m *MetaCodeGenerator) makeTempDirName() string {
+func (m *MetaJSONEncoders) makeTempDirName() string {
 	tempDir := fmt.Sprintf("json_encoders_generator_%d", time.Now().UnixNano())
 
 	return filepath.Join(m.Directory, tempDir)
 }
 
-func (m *MetaCodeGenerator) TempFile() string {
+func (m *MetaJSONEncoders) TempFile() string {
 	return filepath.Join(m.tempDirName, "gen_encoders.go")
 }
 
@@ -153,12 +153,12 @@ func (m *MetaCodeGenerator) TempFile() string {
 var tmpl = `package main
 
 import (
-	"github.com/marcel/jitjson"
+	"github.com/marcel/jitjson/codegen"
 	"{{.PackageRoot}}/{{.Package}}"
 )
 
 func main() {
-	codeGen := jitjson.NewCodeGenerator("{{.Directory}}", "{{.Package}}")
+	codeGen := codegen.NewJSONEncoders("{{.Directory}}", "{{.Package}}")
 	codeGen.PackageDeclaration()
 	codeGen.ImportDeclaration()	
 	codeGen.SetBufferPoolVar()

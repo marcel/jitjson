@@ -1,4 +1,4 @@
-package jitjson
+package codegen
 
 import (
 	"bytes"
@@ -14,35 +14,35 @@ import (
 	"unicode/utf8"
 )
 
-type CodeGenerator struct {
+type JSONEncoders struct {
 	Directory string
 	Package   string
 	bytes.Buffer
 	structValue reflect.Value
 }
 
-func NewCodeGenerator(directory string, packageName string) *CodeGenerator {
-	return &CodeGenerator{Directory: directory, Package: packageName}
+func NewJSONEncoders(directory string, packageName string) *JSONEncoders {
+	return &JSONEncoders{Directory: directory, Package: packageName}
 }
 
-func (c *CodeGenerator) PackageDeclaration() {
+func (c *JSONEncoders) PackageDeclaration() {
 	c.WriteString(fmt.Sprintf("package %s\n\n", c.Package))
 }
 
-func (c *CodeGenerator) ImportDeclaration() {
+func (c *JSONEncoders) ImportDeclaration() {
 	c.WriteString("import \"github.com/marcel/jitjson/encoding\"\n\n")
 }
 
 // TODO Add func NewEncodingBuffer to wrap bufferPool.GetBuffer()
-func (c *CodeGenerator) SetBufferPoolVar() {
+func (c *JSONEncoders) SetBufferPoolVar() {
 	c.WriteString("var bufferPool = encoding.NewSyncPool(4096)\n\n")
 }
 
-func (c *CodeGenerator) EncodingBufferStructWrapper() {
+func (c *JSONEncoders) EncodingBufferStructWrapper() {
 	c.WriteString("type encodingBuffer struct {\n\t*encoding.Buffer\n}\n\n")
 }
 
-func (c *CodeGenerator) JSONMarshalerInterfaceFor(structName string) {
+func (c *JSONEncoders) JSONMarshalerInterfaceFor(structName string) {
 	buf := bytes.Buffer{}
 
 	buf.WriteString(fmt.Sprintf("func (s %s) MarshalJSON() ([]byte, error) {\n", structName))
@@ -60,10 +60,10 @@ func (c *CodeGenerator) JSONMarshalerInterfaceFor(structName string) {
 	c.Write(buf.Bytes())
 }
 
-var CodeGeneratorTargetFile = "json_encoders.go"
+var JSONEncodersTargetFile = "json_encoders.go"
 
-func (c *CodeGenerator) WriteFile() error {
-	targetPath := filepath.Join(c.Directory, CodeGeneratorTargetFile)
+func (c *JSONEncoders) WriteFile() error {
+	targetPath := filepath.Join(c.Directory, JSONEncodersTargetFile)
 	return ioutil.WriteFile(targetPath, c.Bytes(), 0644)
 }
 
@@ -76,7 +76,7 @@ func newEncodableStructSpec(value reflect.Value) *encodableStructSpec {
 	return &encodableStructSpec{value, []reflect.StructField{}}
 }
 
-func (c *CodeGenerator) EncoderMethodFor(jsonStruct interface{}) error {
+func (c *JSONEncoders) EncoderMethodFor(jsonStruct interface{}) error {
 	value := reflect.ValueOf(jsonStruct)
 
 	var structSpec *encodableStructSpec
@@ -107,7 +107,7 @@ func (c *CodeGenerator) EncoderMethodFor(jsonStruct interface{}) error {
 	return nil
 }
 
-func (c *CodeGenerator) generateMethodForStruct(structSpec *encodableStructSpec) {
+func (c *JSONEncoders) generateMethodForStruct(structSpec *encodableStructSpec) {
 	c.structValue = structSpec.value
 
 	c.methodDeclaration()
@@ -126,11 +126,11 @@ func (c *CodeGenerator) generateMethodForStruct(structSpec *encodableStructSpec)
 	c.endMethod()
 }
 
-func (c *CodeGenerator) encoderInvoke(method string) {
+func (c *JSONEncoders) encoderInvoke(method string) {
 	c.WriteString(fmt.Sprintf("  e.%s()\n", method))
 }
 
-func (c *CodeGenerator) methodDeclaration() {
+func (c *JSONEncoders) methodDeclaration() {
 	methodDecl := fmt.Sprintf(
 		"func (e *encodingBuffer) %sStruct(%s %s) {\n",
 		c.structName(), c.structName(), c.structTypeName(),
@@ -139,7 +139,7 @@ func (c *CodeGenerator) methodDeclaration() {
 	c.WriteString(methodDecl)
 }
 
-func (c *CodeGenerator) fieldEncodingFor(field reflect.StructField) {
+func (c *JSONEncoders) fieldEncodingFor(field reflect.StructField) {
 	var attrName string
 
 	attrName = field.Tag.Get("json")
@@ -171,15 +171,15 @@ func (c *CodeGenerator) fieldEncodingFor(field reflect.StructField) {
 	}
 }
 
-func (c *CodeGenerator) dispatch(field reflect.StructField) string {
+func (c *JSONEncoders) dispatch(field reflect.StructField) string {
 	return fmt.Sprintf("%s.%s", c.structName(), field.Name)
 }
 
-func (c *CodeGenerator) stringFieldEncoding(field reflect.StructField) {
+func (c *JSONEncoders) stringFieldEncoding(field reflect.StructField) {
 	c.invokeEncoderForFieldType("String", field)
 }
 
-func (c *CodeGenerator) intFieldEncoding(field reflect.StructField) {
+func (c *JSONEncoders) intFieldEncoding(field reflect.StructField) {
 	var specializedIntEncoder string
 
 	switch field.Type.Kind() {
@@ -216,7 +216,7 @@ func (c *CodeGenerator) intFieldEncoding(field reflect.StructField) {
 	c.WriteString(code)
 }
 
-func (c *CodeGenerator) floatFieldEncoding(field reflect.StructField) {
+func (c *JSONEncoders) floatFieldEncoding(field reflect.StructField) {
 	var specializedFloatEncoder string
 
 	switch field.Type.Kind() {
@@ -233,7 +233,7 @@ func (c *CodeGenerator) floatFieldEncoding(field reflect.StructField) {
 
 }
 
-func (c *CodeGenerator) structFieldEncoding(field reflect.StructField) {
+func (c *JSONEncoders) structFieldEncoding(field reflect.StructField) {
 	// TODO Consolidate this and the duplicate code in sliceFieldEncoding
 	jsonMarshalerType := reflect.TypeOf(new(json.Marshaler)).Elem()
 	if field.Type.Implements(jsonMarshalerType) {
@@ -251,7 +251,7 @@ func (c *CodeGenerator) structFieldEncoding(field reflect.StructField) {
 	c.WriteString(code)
 }
 
-func (c *CodeGenerator) lowerCase(s string) string {
+func (c *JSONEncoders) lowerCase(s string) string {
 	if s == "" {
 		return ""
 	}
@@ -259,7 +259,7 @@ func (c *CodeGenerator) lowerCase(s string) string {
 	return string(unicode.ToLower(r)) + s[n:]
 }
 
-func (c *CodeGenerator) sliceFieldEncoding(field reflect.StructField) {
+func (c *JSONEncoders) sliceFieldEncoding(field reflect.StructField) {
 	c.WriteString("  e.WriteByte('[')\n")
 	forLoopLine := fmt.Sprintf(
 		"  for index, element := range %s {\n", c.dispatch(field),
@@ -296,7 +296,7 @@ func (c *CodeGenerator) sliceFieldEncoding(field reflect.StructField) {
 	c.WriteString("  e.WriteByte(']')\n")
 }
 
-func (c *CodeGenerator) invokeEncoderForFieldType(fieldType string, field reflect.StructField) {
+func (c *JSONEncoders) invokeEncoderForFieldType(fieldType string, field reflect.StructField) {
 	var code string
 
 	if field.Type.String() == field.Type.Kind().String() {
@@ -307,15 +307,14 @@ func (c *CodeGenerator) invokeEncoderForFieldType(fieldType string, field reflec
 	c.WriteString(code)
 }
 
-func (c *CodeGenerator) endMethod() {
+func (c *JSONEncoders) endMethod() {
 	c.WriteString("}\n\n")
 }
 
-func (c *CodeGenerator) structTypeName() string {
+func (c *JSONEncoders) structTypeName() string {
 	return c.structValue.Type().Name()
 }
 
-func (c *CodeGenerator) structName() string {
-	// TODO this needs to be only the first letter to lower
+func (c *JSONEncoders) structName() string {
 	return c.lowerCase(c.structTypeName())
 }

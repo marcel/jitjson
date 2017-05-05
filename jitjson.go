@@ -11,8 +11,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/marcel/jitjson"
 	jitast "github.com/marcel/jitjson/ast"
+	"github.com/marcel/jitjson/codegen"
 )
 
 var (
@@ -82,7 +82,7 @@ type GenCommand struct{}
 
 func (c *GenCommand) Run(finder *jitast.JSONStructFinder) error {
 	for _, structDir := range finder.StructDirectories() {
-		metaCodeGen := jitjson.NewMetaCodeGenerator(structDir)
+		metaCodeGen := codegen.NewMetaJSONEncoders(structDir)
 
 		err := metaCodeGen.Exec()
 		if err != nil {
@@ -127,7 +127,7 @@ type CleanCommand struct{}
 
 func (c *CleanCommand) Run(finder *jitast.JSONStructFinder) error {
 	for _, structDir := range finder.StructDirectories() {
-		metaGen := jitjson.NewMetaCodeGenerator(structDir)
+		metaGen := codegen.NewMetaJSONEncoders(structDir)
 		err := metaGen.DeleteOutdatedEncoderFile()
 
 		if err != nil {
@@ -149,7 +149,7 @@ func (c *DumpCommand) Run(finder *jitast.JSONStructFinder) error {
 				continue
 			}
 		}
-		metaCodeGen := jitjson.NewMetaCodeGenerator(structDir)
+		metaCodeGen := codegen.NewMetaJSONEncoders(structDir)
 		metaCodeGen.WriteTo(os.Stdout)
 	}
 
@@ -160,7 +160,7 @@ type FilesCommand struct{}
 
 func (c *FilesCommand) Run(finder *jitast.JSONStructFinder) error {
 	for _, structDir := range finder.StructDirectories() {
-		metaGen := jitjson.NewMetaCodeGenerator(structDir)
+		metaGen := codegen.NewMetaJSONEncoders(structDir)
 		if _, err := os.Stat(metaGen.PathToTargetFile()); !os.IsNotExist(err) {
 			currentDir, err := os.Getwd()
 			if err != nil {

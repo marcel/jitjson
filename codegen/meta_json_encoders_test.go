@@ -1,4 +1,4 @@
-package jitjson
+package codegen
 
 import (
 	"bytes"
@@ -91,17 +91,17 @@ func (m *mockFile) Write(p []byte) (n int, err error) {
 	return bytesWritten, m.errorToReturn
 }
 
-type MetaCodeGeneratorTestSuite struct {
+type MetaJSONEncodersTestSuite struct {
 	suite.Suite
-	generator *MetaCodeGenerator
+	generator *MetaJSONEncoders
 	fs        *mockFileSystem
 }
 
-func TestMetaCodeGeneratorTestSuite(t *testing.T) {
-	suite.Run(t, new(MetaCodeGeneratorTestSuite))
+func TestMetaJSONEncodersTestSuite(t *testing.T) {
+	suite.Run(t, new(MetaJSONEncodersTestSuite))
 }
 
-func (s *MetaCodeGeneratorTestSuite) SetupTest() {
+func (s *MetaJSONEncodersTestSuite) SetupTest() {
 	spec, err := ast.FindJSONStructFor("github.com/marcel/jitjson/fixtures/media", "Album")
 	s.Nil(err)
 
@@ -113,12 +113,12 @@ func (s *MetaCodeGeneratorTestSuite) SetupTest() {
 		Specs:       []ast.StructTypeSpec{*spec},
 	}
 
-	s.generator = NewMetaCodeGenerator(structDir)
+	s.generator = NewMetaJSONEncoders(structDir)
 	s.fs = NewMockFileSystem()
 	s.generator.fileSystem = s.fs
 }
 
-func (s *MetaCodeGeneratorTestSuite) TestWriteFile() {
+func (s *MetaJSONEncodersTestSuite) TestWriteFile() {
 	s.Equal(0, len(s.fs.filesCreated))
 
 	s.Nil(s.generator.WriteFile())
@@ -134,7 +134,7 @@ func (s *MetaCodeGeneratorTestSuite) TestWriteFile() {
 	s.Equal(expected.String(), file.String())
 }
 
-func (s *MetaCodeGeneratorTestSuite) TestWriteFileFails() {
+func (s *MetaJSONEncodersTestSuite) TestWriteFileFails() {
 	s.fs.errorToReturn = errors.New("Create failed")
 
 	s.Equal(0, len(s.fs.filesCreated))
@@ -149,7 +149,7 @@ func (s *MetaCodeGeneratorTestSuite) TestWriteFileFails() {
 	s.Equal("", file.String())
 }
 
-func (s *MetaCodeGeneratorTestSuite) TestExec() {
+func (s *MetaJSONEncodersTestSuite) TestExec() {
 	emptyFS := NewMockFileSystem()
 	s.Equal(emptyFS, s.fs)
 
@@ -195,7 +195,7 @@ func (s *MetaCodeGeneratorTestSuite) TestExec() {
 	s.Equal(expectedRmRF, s.fs.rmRfed[0])
 }
 
-func (s *MetaCodeGeneratorTestSuite) TestDeleteOutdateEncoderFileThatDoesNotExist() {
+func (s *MetaJSONEncodersTestSuite) TestDeleteOutdateEncoderFileThatDoesNotExist() {
 	fileDoesNotExistError := new(os.PathError)
 	fileDoesNotExistError.Err = syscall.ENOENT
 	s.fs.errorToReturn = fileDoesNotExistError
@@ -209,7 +209,7 @@ func (s *MetaCodeGeneratorTestSuite) TestDeleteOutdateEncoderFileThatDoesNotExis
 	s.Equal(otherPathError, s.generator.DeleteOutdatedEncoderFile())
 }
 
-func (s *MetaCodeGeneratorTestSuite) TestMetaCodeGenerator() {
+func (s *MetaJSONEncodersTestSuite) TestMetaJSONEncoders() {
 	buf := new(bytes.Buffer)
 
 	s.Nil(s.generator.WriteTo(buf))
@@ -218,12 +218,12 @@ func (s *MetaCodeGeneratorTestSuite) TestMetaCodeGenerator() {
 		`package main
 
 import (
-	"github.com/marcel/jitjson"
+	"github.com/marcel/jitjson/codegen"
 	"github.com/marcel/jitjson/fixtures/media"
 )
 
 func main() {
-	codeGen := jitjson.NewCodeGenerator("/path/to/project/src/github.com/marcel/jitson/fixtures/media", "media")
+	codeGen := codegen.NewJSONEncoders("/path/to/project/src/github.com/marcel/jitson/fixtures/media", "media")
 	codeGen.PackageDeclaration()
 	codeGen.ImportDeclaration()	
 	codeGen.SetBufferPoolVar()
