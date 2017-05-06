@@ -53,7 +53,7 @@ func (c *JSONEncoders) JSONMarshalerInterfaceFor(structName string) {
 	buf.WriteString("\t\tbufferPool.Put(underlying)\n")
 	buf.WriteString("\t}()\n\n")
 
-	buf.WriteString(fmt.Sprintf("\tbuf.%sStruct(s)\n", strings.ToLower(structName)))
+	buf.WriteString(fmt.Sprintf("\tbuf.%sStruct(s)\n", c.lowerCase(structName)))
 	buf.WriteString("\treturn buf.Bytes(), nil\n")
 	buf.WriteString("}\n\n")
 

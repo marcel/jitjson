@@ -54,7 +54,7 @@ func (s *JSONEncodersTestSuite) TestJSONMarshlerInterface() {
 		bufferPool.Put(underlying)
 	}()
 
-	buf.somestructnameStruct(s)
+	buf.someStructNameStruct(s)
 	return buf.Bytes(), nil
 }
 

@@ -324,3 +324,7 @@ type Address struct {
 	ZipCode int    `json:"zip_code"`
 	Country string `json:"country"`
 }
+
+type thisWillBeSkippedBecauseItIsNotExported struct {
+	Identifier string `json:"identifier"`
+}

@@ -131,7 +131,13 @@ func (m *MetaJSONEncoders) Exec() error {
 	// TODO After generating the json_encoders.go file we should try a 'go build'
 	// and if that returns with a non-zero exit status then the json_encoders
 	// should be deleted and the error should be returned and displayed
-	_, err = m.fileSystem.ExecGo(m.TempFile())
+	var buf *bytes.Buffer
+	buf, err = m.fileSystem.ExecGo(m.TempFile())
+
+	if err != nil {
+		err = fmt.Errorf("MetaJSONEncoders: Exec failed\n%s\n%s", buf.String(), err.Error())
+	}
+
 	return err
 }
 

@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // type WalkFunc func(path string, info os.FileInfo, err error) error
@@ -195,6 +197,15 @@ func (s *JSONStructFinder) FindInAST(fileNode *ast.File) []StructTypeSpec {
 		}
 
 		if structType, ok := typeSpec.Type.(*ast.StructType); ok {
+			// We can't code-gen structs that aren't exported because we
+			// have to run the code gen in a separate package (could in theory get
+			// around this by temporarily defining a exported struct that wraps the
+			// unexported one but...)
+			firstRune, _ := utf8.DecodeRuneInString(typeSpec.Name.Name)
+			if !unicode.IsUpper(firstRune) {
+				return true
+			}
+
 			for _, field := range structType.Fields.List {
 				if field.Tag != nil && field.Tag.Kind == token.STRING {
 					if strings.Contains(field.Tag.Value, "json:") {
