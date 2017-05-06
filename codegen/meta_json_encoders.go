@@ -19,7 +19,7 @@ type FileSystemInterface interface {
 	MkdirAll(path string, perm os.FileMode) error
 	Remove(name string) error
 	RmRF(dirName string) error
-	ExecGo(file string) error
+	ExecGo(file string) (*bytes.Buffer, error)
 }
 
 type File interface {
@@ -49,8 +49,13 @@ func (f fileSystem) RmRF(dirName string) error {
 	return exec.Command("rm", "-rf", dirName).Run()
 }
 
-func (f fileSystem) ExecGo(file string) error {
-	return exec.Command("go", "run", file).Run()
+func (f fileSystem) ExecGo(file string) (*bytes.Buffer, error) {
+	cmd := exec.Command("go", "run", file)
+	buf := new(bytes.Buffer)
+	cmd.Stdout = buf
+	cmd.Stderr = buf
+	err := cmd.Run()
+	return buf, err
 }
 
 var DefaultFileSystemInterface = fileSystem{}
@@ -126,7 +131,8 @@ func (m *MetaJSONEncoders) Exec() error {
 	// TODO After generating the json_encoders.go file we should try a 'go build'
 	// and if that returns with a non-zero exit status then the json_encoders
 	// should be deleted and the error should be returned and displayed
-	return m.fileSystem.ExecGo(m.TempFile())
+	_, err = m.fileSystem.ExecGo(m.TempFile())
+	return err
 }
 
 func (m *MetaJSONEncoders) CleanUp() error {
@@ -154,7 +160,7 @@ var tmpl = `package main
 
 import (
 	"github.com/marcel/jitjson/codegen"
-	"{{.PackageRoot}}/{{.Package}}"
+	"{{.ImportPath}}"
 )
 
 func main() {

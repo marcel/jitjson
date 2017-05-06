@@ -46,11 +46,8 @@ type StructDirectory struct {
 	PackageRoot string
 	Package     string
 	Directory   string
+	ImportPath  string
 	Specs       []StructTypeSpec
-}
-
-func (s *StructDirectory) ImportPath() string {
-	return filepath.Join(s.PackageRoot, s.Package)
 }
 
 func NewJSONStructFinder() *JSONStructFinder {
@@ -91,7 +88,7 @@ func FindJSONStructFor(importPath string, name string) (*StructTypeSpec, error) 
 	finder.FindInDir(rootDir)
 
 	for _, structDir := range finder.StructDirectories() {
-		if structDir.ImportPath() == importPath {
+		if structDir.ImportPath == importPath {
 			for _, typeSpec := range structDir.Specs {
 				if typeSpec.Name() == name {
 					return &typeSpec, nil
@@ -170,10 +167,14 @@ func (s *JSONStructFinder) add(spec *StructTypeSpec) {
 
 		packageRoot := pathParts[len(pathParts)-1]
 
+		dirName := filepath.Base(spec.Directory)
+		importPath := filepath.Join(packageRoot, dirName)
+
 		structDir = StructDirectory{
 			PackageRoot: packageRoot,
 			Directory:   spec.Directory,
 			Package:     spec.PackageName,
+			ImportPath:  importPath,
 		}
 	}
 

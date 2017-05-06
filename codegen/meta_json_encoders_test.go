@@ -61,10 +61,10 @@ func (m *mockFileSystem) RmRF(dirName string) error {
 	return m.errorToReturn
 }
 
-func (m *mockFileSystem) ExecGo(file string) error {
+func (m *mockFileSystem) ExecGo(file string) (*bytes.Buffer, error) {
 	m.goExeced = append(m.goExeced, file)
 
-	return m.errorToReturn
+	return new(bytes.Buffer), m.errorToReturn
 }
 
 type mockFile struct {
@@ -110,6 +110,7 @@ func (s *MetaJSONEncodersTestSuite) SetupTest() {
 		PackageRoot: "github.com/marcel/jitjson/fixtures",
 		Package:     "media",
 		Directory:   "/path/to/project/src/github.com/marcel/jitson/fixtures/media",
+		ImportPath:  "github.com/marcel/jitjson/fixtures/media",
 		Specs:       []ast.StructTypeSpec{*spec},
 	}
 

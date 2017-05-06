@@ -46,11 +46,11 @@ func (c *JSONEncoders) JSONMarshalerInterfaceFor(structName string) {
 	buf := bytes.Buffer{}
 
 	buf.WriteString(fmt.Sprintf("func (s %s) MarshalJSON() ([]byte, error) {\n", structName))
-	buf.WriteString("\tunderlying := bufferPool.GetBuffer()\n")
+	buf.WriteString("\tunderlying := bufferPool.Get()\n")
 	buf.WriteString("\tbuf := encodingBuffer{Buffer: underlying}\n")
 	buf.WriteString("\tdefer func() {\n")
 	buf.WriteString("\t\tunderlying.Reset()\n")
-	buf.WriteString("\t\tbufferPool.PutBuffer(underlying)\n")
+	buf.WriteString("\t\tbufferPool.Put(underlying)\n")
 	buf.WriteString("\t}()\n\n")
 
 	buf.WriteString(fmt.Sprintf("\tbuf.%sStruct(s)\n", strings.ToLower(structName)))

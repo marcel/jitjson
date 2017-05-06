@@ -9,11 +9,11 @@ type encodingBuffer struct {
 }
 
 func (s Album) MarshalJSON() ([]byte, error) {
-	underlying := bufferPool.GetBuffer()
+	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
 		underlying.Reset()
-		bufferPool.PutBuffer(underlying)
+		bufferPool.Put(underlying)
 	}()
 
 	buf.albumStruct(s)
@@ -105,11 +105,11 @@ func (e *encodingBuffer) albumStruct(album Album) {
 }
 
 func (s Image) MarshalJSON() ([]byte, error) {
-	underlying := bufferPool.GetBuffer()
+	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
 		underlying.Reset()
-		bufferPool.PutBuffer(underlying)
+		bufferPool.Put(underlying)
 	}()
 
 	buf.imageStruct(s)
@@ -137,11 +137,11 @@ func (e *encodingBuffer) imageStruct(image Image) {
 }
 
 func (s Artist) MarshalJSON() ([]byte, error) {
-	underlying := bufferPool.GetBuffer()
+	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
 		underlying.Reset()
-		bufferPool.PutBuffer(underlying)
+		bufferPool.Put(underlying)
 	}()
 
 	buf.artistStruct(s)
@@ -184,11 +184,11 @@ func (e *encodingBuffer) artistStruct(artist Artist) {
 }
 
 func (s Track) MarshalJSON() ([]byte, error) {
-	underlying := bufferPool.GetBuffer()
+	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
 		underlying.Reset()
-		bufferPool.PutBuffer(underlying)
+		bufferPool.Put(underlying)
 	}()
 
 	buf.trackStruct(s)

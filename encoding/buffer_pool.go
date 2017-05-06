@@ -8,8 +8,8 @@ import (
 // BufferPool provides an API for managing
 // bytes.Buffer objects:
 type BufferPool interface {
-	GetBuffer() *Buffer
-	PutBuffer(*Buffer)
+	Get() *Buffer
+	Put(*Buffer)
 }
 
 // syncPoolBufPool is an implementation of BufferPool
@@ -28,22 +28,23 @@ func NewSyncPool(bufSize int) BufferPool {
 
 		return NewBufferWithBuffer(b)
 	}
+
 	newPool.pool = &sync.Pool{}
 	newPool.pool.New = newPool.makeBuffer
 
 	return &newPool
 }
 
-func (bp *syncPoolBufPool) GetBuffer() (b *Buffer) {
+func (bp *syncPoolBufPool) Get() (b *Buffer) {
 	poolObject := bp.pool.Get()
 
 	b, ok := poolObject.(*Buffer)
-	if !ok { // explicitly make buffer if sync.Pool returns nil:
+	if !ok {
 		b = bp.makeBuffer().(*Buffer)
 	}
 	return
 }
 
-func (bp *syncPoolBufPool) PutBuffer(b *Buffer) {
+func (bp *syncPoolBufPool) Put(b *Buffer) {
 	bp.pool.Put(b)
 }

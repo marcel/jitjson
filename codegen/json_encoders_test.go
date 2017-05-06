@@ -47,11 +47,11 @@ func (s *JSONEncodersTestSuite) TestJSONMarshlerInterface() {
 
 	expected :=
 		`func (s SomeStructName) MarshalJSON() ([]byte, error) {
-	underlying := bufferPool.GetBuffer()
+	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
 		underlying.Reset()
-		bufferPool.PutBuffer(underlying)
+		bufferPool.Put(underlying)
 	}()
 
 	buf.somestructnameStruct(s)

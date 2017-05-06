@@ -9,11 +9,11 @@ type encodingBuffer struct {
 }
 
 func (s Route) MarshalJSON() ([]byte, error) {
-	underlying := bufferPool.GetBuffer()
+	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
 		underlying.Reset()
-		bufferPool.PutBuffer(underlying)
+		bufferPool.Put(underlying)
 	}()
 
 	buf.routeStruct(s)
@@ -41,11 +41,11 @@ func (e *encodingBuffer) routeStruct(route Route) {
 }
 
 func (s Leg) MarshalJSON() ([]byte, error) {
-	underlying := bufferPool.GetBuffer()
+	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
 		underlying.Reset()
-		bufferPool.PutBuffer(underlying)
+		bufferPool.Put(underlying)
 	}()
 
 	buf.legStruct(s)
@@ -98,11 +98,11 @@ func (e *encodingBuffer) legStruct(leg Leg) {
 }
 
 func (s Step) MarshalJSON() ([]byte, error) {
-	underlying := bufferPool.GetBuffer()
+	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
 		underlying.Reset()
-		bufferPool.PutBuffer(underlying)
+		bufferPool.Put(underlying)
 	}()
 
 	buf.stepStruct(s)
@@ -150,11 +150,11 @@ func (e *encodingBuffer) stepStruct(step Step) {
 }
 
 func (s Location) MarshalJSON() ([]byte, error) {
-	underlying := bufferPool.GetBuffer()
+	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
 		underlying.Reset()
-		bufferPool.PutBuffer(underlying)
+		bufferPool.Put(underlying)
 	}()
 
 	buf.locationStruct(s)
@@ -177,11 +177,11 @@ func (e *encodingBuffer) locationStruct(location Location) {
 }
 
 func (s Address) MarshalJSON() ([]byte, error) {
-	underlying := bufferPool.GetBuffer()
+	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
 		underlying.Reset()
-		bufferPool.PutBuffer(underlying)
+		bufferPool.Put(underlying)
 	}()
 
 	buf.addressStruct(s)
