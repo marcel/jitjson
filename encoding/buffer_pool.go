@@ -40,11 +40,12 @@ func (bp *syncPoolBufPool) Get() (b *Buffer) {
 
 	b, ok := poolObject.(*Buffer)
 	if !ok {
-		b = bp.makeBuffer().(*Buffer)
+		return bp.makeBuffer().(*Buffer)
 	}
-	return
+	return b
 }
 
 func (bp *syncPoolBufPool) Put(b *Buffer) {
+	b.Reset()
 	bp.pool.Put(b)
 }

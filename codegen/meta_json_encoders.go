@@ -138,6 +138,11 @@ func (m *MetaJSONEncoders) Exec() error {
 		err = fmt.Errorf("MetaJSONEncoders: Exec failed\n%s\n%s", buf.String(), err.Error())
 	}
 
+	outPut := buf.String()
+	if outPut != "" {
+		fmt.Fprintf(os.Stderr, outPut)
+	}
+
 	return err
 }
 
@@ -177,7 +182,7 @@ func main() {
 	codeGen.EncodingBufferStructWrapper()	
 
 	{{- range .Specs }}
-	codeGen.JSONMarshalerInterfaceFor("{{.Name}}")
+	codeGen.JSONMarshalerInterfaceFor({{.PackageName}}.{{.Name}}{})
 	codeGen.EncoderMethodFor({{.PackageName}}.{{.Name}}{})
 	{{- end  }}
 

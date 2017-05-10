@@ -306,9 +306,9 @@ type Step struct {
 	Duration      time.Duration `json:"duration"`
 	StartLocation Location      `json:"start_location"`
 	EndLocation   Location      `json:"end_location"`
-	TravelMode    `json:"travel_mode"`
-	Maneuver      `json:"maneuver"`
-	Instructions  string `json:"instructions"`
+	TravelMode    TravelMode    `json:"travel_mode"`
+	Maneuver      Maneuver      `json:"maneuver"`
+	Instructions  string        `json:"instructions"`
 }
 
 type Location struct {

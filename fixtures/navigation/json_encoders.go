@@ -13,7 +13,6 @@ func (s Route) MarshalJSON() ([]byte, error) {
 	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
-		underlying.Reset()
 		bufferPool.Put(underlying)
 	}()
 
@@ -33,7 +32,9 @@ func (e *encodingBuffer) routeStruct(route Route) {
 	e.Write([]byte{0x22, 0x6c, 0x65, 0x67, 0x73, 0x22, 0x3a})
 	e.WriteByte('[')
 	for index, element := range route.Legs {
-		if index != 0 { e.Comma() }
+		if index != 0 {
+			e.Comma()
+		}
 		e.legStruct(element)
 	}
 	e.WriteByte(']')
@@ -45,7 +46,6 @@ func (s Leg) MarshalJSON() ([]byte, error) {
 	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
-		underlying.Reset()
 		bufferPool.Put(underlying)
 	}()
 
@@ -90,7 +90,9 @@ func (e *encodingBuffer) legStruct(leg Leg) {
 	e.Write([]byte{0x22, 0x73, 0x74, 0x65, 0x70, 0x73, 0x22, 0x3a})
 	e.WriteByte('[')
 	for index, element := range leg.Steps {
-		if index != 0 { e.Comma() }
+		if index != 0 {
+			e.Comma()
+		}
 		e.stepStruct(element)
 	}
 	e.WriteByte(']')
@@ -102,7 +104,6 @@ func (s Step) MarshalJSON() ([]byte, error) {
 	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
-		underlying.Reset()
 		bufferPool.Put(underlying)
 	}()
 
@@ -154,7 +155,6 @@ func (s Location) MarshalJSON() ([]byte, error) {
 	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
-		underlying.Reset()
 		bufferPool.Put(underlying)
 	}()
 
@@ -181,7 +181,6 @@ func (s Address) MarshalJSON() ([]byte, error) {
 	underlying := bufferPool.Get()
 	buf := encodingBuffer{Buffer: underlying}
 	defer func() {
-		underlying.Reset()
 		bufferPool.Put(underlying)
 	}()
 
@@ -223,4 +222,3 @@ func (e *encodingBuffer) addressStruct(address Address) {
 
 	e.CloseBrace()
 }
-

@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -37,9 +38,7 @@ type JSONStructFinder struct {
 	filepath.WalkFunc
 
 	structDirectories map[string]StructDirectory
-
 	*token.FileSet
-
 	currentDirectory string
 }
 
@@ -148,9 +147,14 @@ func (s *JSONStructFinder) findInFile(directoryPath string, info os.FileInfo, er
 
 	file := filepath.Join(s.currentDirectory, info.Name())
 
-	fileNode, err := parser.ParseFile(s.FileSet, file, nil, parser.AllErrors)
+	mode := parser.AllErrors | parser.ParseComments
+	fileNode, err := parser.ParseFile(s.FileSet, file, nil, mode)
 	if err != nil {
 		return err
+	}
+
+	if !s.partOfBuild(fileNode) {
+		return nil
 	}
 
 	for _, spec := range s.FindInAST(fileNode) {
@@ -158,6 +162,21 @@ func (s *JSONStructFinder) findInFile(directoryPath string, info os.FileInfo, er
 	}
 
 	return nil
+}
+
+func (s *JSONStructFinder) partOfBuild(fileNode *ast.File) bool {
+	// This file doesn't build on the current platform so trying to generate
+	// json for it will fail with a compile error. Skip it...
+	// TODO This is a janky work around for now (e.g. if you are running this on
+	// linux you certainly don't want this behavior)
+	for _, comment := range fileNode.Comments {
+		if strings.HasPrefix(comment.Text(), "+build") {
+			if !strings.Contains(comment.Text(), runtime.GOOS) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (s *JSONStructFinder) add(spec *StructTypeSpec) {
@@ -187,32 +206,22 @@ func (s *JSONStructFinder) add(spec *StructTypeSpec) {
 
 func (s *JSONStructFinder) FindInAST(fileNode *ast.File) []StructTypeSpec {
 	structs := []StructTypeSpec{}
-
 	packageName := fileNode.Name.Name
 
 	structFinder := func(node ast.Node) bool {
-		typeSpec, ok := node.(*ast.TypeSpec)
-		if !ok {
-			return true
-		}
+		switch nodeType := node.(type) {
+		case *ast.TypeSpec:
+			if structType, ok := nodeType.Type.(*ast.StructType); ok {
+				if !s.isExported(nodeType) {
+					return true
+				}
 
-		if structType, ok := typeSpec.Type.(*ast.StructType); ok {
-			// We can't code-gen structs that aren't exported because we
-			// have to run the code gen in a separate package (could in theory get
-			// around this by temporarily defining a exported struct that wraps the
-			// unexported one but...)
-			firstRune, _ := utf8.DecodeRuneInString(typeSpec.Name.Name)
-			if !unicode.IsUpper(firstRune) {
-				return true
-			}
-
-			for _, field := range structType.Fields.List {
-				if field.Tag != nil && field.Tag.Kind == token.STRING {
-					if strings.Contains(field.Tag.Value, "json:") {
+				for _, field := range structType.Fields.List {
+					if s.isJSONField(field) {
 						spec := StructTypeSpec{
 							Directory:   s.currentDirectory,
 							PackageName: packageName,
-							TypeSpec:    typeSpec,
+							TypeSpec:    nodeType,
 						}
 
 						structs = append(structs, spec)
@@ -228,4 +237,22 @@ func (s *JSONStructFinder) FindInAST(fileNode *ast.File) []StructTypeSpec {
 	ast.Inspect(fileNode, structFinder)
 
 	return structs
+}
+
+func (s *JSONStructFinder) isJSONField(field *ast.Field) bool {
+	if field.Tag != nil && field.Tag.Kind == token.STRING {
+		// TODO Need to handle json tag options like omitempty
+		return strings.Contains(field.Tag.Value, "json:")
+	}
+
+	return false
+}
+
+// We can't code-gen structs that aren't exported because we
+// have to run the code gen in a separate package (could in theory get
+// around this by temporarily defining a exported struct that wraps the
+// unexported one but...)
+func (s *JSONStructFinder) isExported(nodeType *ast.TypeSpec) bool {
+	firstRune, _ := utf8.DecodeRuneInString(nodeType.Name.Name)
+	return unicode.IsUpper(firstRune)
 }

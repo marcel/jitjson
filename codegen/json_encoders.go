@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -18,11 +20,17 @@ type JSONEncoders struct {
 	Directory string
 	Package   string
 	bytes.Buffer
-	structValue reflect.Value
+	structValue               reflect.Value
+	definedMarshalerInterface map[string]bool
 }
 
 func NewJSONEncoders(directory string, packageName string) *JSONEncoders {
-	return &JSONEncoders{Directory: directory, Package: packageName}
+	definedMarshalerInterface := make(map[string]bool)
+	return &JSONEncoders{
+		Directory:                 directory,
+		Package:                   packageName,
+		definedMarshalerInterface: definedMarshalerInterface,
+	}
 }
 
 func (c *JSONEncoders) PackageDeclaration() {
@@ -30,6 +38,7 @@ func (c *JSONEncoders) PackageDeclaration() {
 }
 
 func (c *JSONEncoders) ImportDeclaration() {
+	c.WriteString("import \"encoding/json\"\n")
 	c.WriteString("import \"github.com/marcel/jitjson/encoding\"\n\n")
 }
 
@@ -42,29 +51,80 @@ func (c *JSONEncoders) EncodingBufferStructWrapper() {
 	c.WriteString("type encodingBuffer struct {\n\t*encoding.Buffer\n}\n\n")
 }
 
-func (c *JSONEncoders) JSONMarshalerInterfaceFor(structName string) {
-	buf := bytes.Buffer{}
+var jsonMarshalerType = reflect.TypeOf(new(json.Marshaler)).Elem()
 
-	buf.WriteString(fmt.Sprintf("func (s %s) MarshalJSON() ([]byte, error) {\n", structName))
-	buf.WriteString("\tunderlying := bufferPool.Get()\n")
-	buf.WriteString("\tbuf := encodingBuffer{Buffer: underlying}\n")
-	buf.WriteString("\tdefer func() {\n")
-	buf.WriteString("\t\tunderlying.Reset()\n")
-	buf.WriteString("\t\tbufferPool.Put(underlying)\n")
-	buf.WriteString("\t}()\n\n")
+// TODO Extract to struct maybe
+func (c *JSONEncoders) JSONMarshalerInterfaceFor(jsonStruct interface{}) {
+	value := reflect.ValueOf(jsonStruct)
 
-	buf.WriteString(fmt.Sprintf("\tbuf.%sStruct(s)\n", c.lowerCase(structName)))
-	buf.WriteString("\treturn buf.Bytes(), nil\n")
-	buf.WriteString("}\n\n")
+	if value.Kind() != reflect.Struct {
+		return
+	}
 
-	c.Write(buf.Bytes())
+	if value.Type().Implements(jsonMarshalerType) ||
+		reflect.PtrTo(value.Type()).Implements(jsonMarshalerType) {
+		return
+	}
+
+	structName := value.Type().Name()
+
+	if c.marshalerInterfaceAlreadyDefined(structName) {
+		return
+	}
+
+	c.jsonMarshalerInterfaceFor(structName)
+	c.definedMarshalerInterface[structName] = true
+}
+
+func (c *JSONEncoders) jsonMarshalerInterfaceFor(structName string) {
+	c.WriteString(fmt.Sprintf("func (s %s) MarshalJSON() ([]byte, error) {\n", structName))
+	c.WriteString("\tunderlying := bufferPool.Get()\n")
+	c.WriteString("\tbuf := encodingBuffer{Buffer: underlying}\n")
+	c.WriteString("\tdefer func() {\n")
+	c.WriteString("\t\tbufferPool.Put(underlying)\n")
+	c.WriteString("\t}()\n\n")
+
+	c.WriteString(fmt.Sprintf("\tbuf.%sStruct(s)\n", c.lowerCase(structName)))
+	c.WriteString("\treturn buf.Bytes(), nil\n")
+	c.WriteString("}\n\n")
+}
+
+func (c *JSONEncoders) marshalerInterfaceAlreadyDefined(structName string) bool {
+	isDefined, _ := c.definedMarshalerInterface[structName]
+
+	return isDefined
 }
 
 var JSONEncodersTargetFile = "json_encoders.go"
 
 func (c *JSONEncoders) WriteFile() error {
 	targetPath := filepath.Join(c.Directory, JSONEncodersTargetFile)
-	return ioutil.WriteFile(targetPath, c.Bytes(), 0644)
+
+	return ioutil.WriteFile(targetPath, c.Formatted(), 0644)
+}
+
+func (c *JSONEncoders) Formatted() []byte {
+	tmpFile, err := ioutil.TempFile("", "gofmtinput")
+	defer os.Remove(tmpFile.Name())
+
+	if _, err = tmpFile.Write(c.Bytes()); err != nil {
+		return c.Bytes()
+	}
+
+	if tmpFile.Close() != nil {
+		return c.Bytes()
+	}
+
+	out := new(bytes.Buffer)
+
+	cmd := exec.Command("goimports", tmpFile.Name())
+	cmd.Stdout = out
+
+	if err = cmd.Run(); err != nil {
+		return c.Bytes()
+	}
+
+	return out.Bytes()
 }
 
 type encodableStructSpec struct {
@@ -139,7 +199,7 @@ func (c *JSONEncoders) methodDeclaration() {
 	c.WriteString(methodDecl)
 }
 
-func (c *JSONEncoders) fieldEncodingFor(field reflect.StructField) {
+func (c *JSONEncoders) attributeName(field reflect.StructField) {
 	var attrName string
 
 	attrName = field.Tag.Get("json")
@@ -149,12 +209,25 @@ func (c *JSONEncoders) fieldEncodingFor(field reflect.StructField) {
 
 	quotedAttr := strconv.Quote(attrName) + ":"
 	c.WriteString(fmt.Sprintf("\n\t// %s\n\te.Write(%#v)\n", quotedAttr, []byte(quotedAttr)))
+}
 
-	// TODO Needs to be refactored to recursively support nested collections like
-	// a slice of a slice, etc
+// TODO Extract everything that needs to be passed a field into
+// methods of this struct
+type FieldEncoder struct {
+	field   reflect.StructField
+	encoder *JSONEncoders
+}
+
+func (c *JSONEncoders) fieldEncodingFor(field reflect.StructField) {
+	c.attributeName(field)
+
 	switch field.Type.Kind() {
 	default:
 		log.Println("Unsupported field kind", field.Type.Kind())
+	case reflect.Interface:
+		c.fallbackToJSONMarshal(field)
+	case reflect.Ptr:
+		c.ptrFieldEncoding(field)
 	case reflect.Bool:
 		c.invokeEncoderForFieldType("Bool", field)
 	case reflect.String:
@@ -168,7 +241,13 @@ func (c *JSONEncoders) fieldEncodingFor(field reflect.StructField) {
 		c.structFieldEncoding(field)
 	case reflect.Slice, reflect.Array:
 		c.sliceFieldEncoding(field)
+	case reflect.Map:
+		c.mapFieldEncoding(field)
 	}
+}
+
+func (c *JSONEncoders) ptrFieldEncoding(field reflect.StructField) {
+	c.encoderForElementType(field.Type.Elem(), "*"+c.dispatch(field))
 }
 
 func (c *JSONEncoders) dispatch(field reflect.StructField) string {
@@ -233,13 +312,22 @@ func (c *JSONEncoders) floatFieldEncoding(field reflect.StructField) {
 
 }
 
-func (c *JSONEncoders) marshalJSONForReceiver(receiver string) {
-	c.WriteString(fmt.Sprintf("\tjsonBytes, err := %s.MarshalJSON()\n", receiver))
-	c.WriteString("\tif err != nil {\n\t\tpanic(err)\n\t}\n")
-	c.WriteString("\te.Write(jsonBytes)\n")
+func (c *JSONEncoders) pkgPath() string {
+	parts := strings.Split(c.Directory, "/src/")
+
+	return parts[len(parts)-1]
 }
 
-var jsonMarshalerType = reflect.TypeOf(new(json.Marshaler)).Elem()
+func (c *JSONEncoders) marshalJSONForReceiver(receiver string) {
+	returnVariable := strings.Split(receiver, ".")[0]
+	c.WriteString(fmt.Sprintf("\t%sBytes, err := %s.MarshalJSON()\n", returnVariable, receiver))
+	c.WriteString("\tif err != nil {\n\t\tpanic(err)\n\t}\n")
+	c.WriteString(fmt.Sprintf("\te.Write(%sBytes)\n", returnVariable))
+}
+
+func (c *JSONEncoders) fromCurrentPackage(t reflect.Type) bool {
+	return c.pkgPath() == t.PkgPath()
+}
 
 func (c *JSONEncoders) structFieldEncoding(field reflect.StructField) {
 	if field.Type.Implements(jsonMarshalerType) {
@@ -247,10 +335,26 @@ func (c *JSONEncoders) structFieldEncoding(field reflect.StructField) {
 		return
 	}
 
+	if !c.fromCurrentPackage(field.Type) {
+		c.fallbackToJSONMarshal(field)
+		return
+	}
+
 	targetStruct := strings.ToLower(field.Type.Name())
 
+	// TODO extract this to a method so encoderForElementType can reuse it
 	code := fmt.Sprintf("\te.%sStruct(%s)\n", targetStruct, c.dispatch(field))
 	c.WriteString(code)
+}
+
+func (c *JSONEncoders) fallbackToJSONMarshal(field reflect.StructField) {
+	targetStruct := strings.ToLower(field.Type.Name())
+	c.jsonMarshal(targetStruct, c.dispatch(field))
+}
+
+func (c *JSONEncoders) jsonMarshal(assignTo string, variableName string) {
+	c.WriteString(fmt.Sprintf("\t%sBytes, _ := json.Marshal(%s)\n", assignTo, variableName))
+	c.WriteString(fmt.Sprintf("\te.Write(%sBytes)\n", assignTo))
 }
 
 func (c *JSONEncoders) lowerCase(s string) string {
@@ -262,38 +366,89 @@ func (c *JSONEncoders) lowerCase(s string) string {
 }
 
 func (c *JSONEncoders) sliceFieldEncoding(field reflect.StructField) {
+	c.sliceEncoding(field.Type, "element", c.dispatch(field))
+}
+
+func (c *JSONEncoders) mapFieldEncoding(field reflect.StructField) {
+	c.mapEncoding(field.Type, "k", "v", c.dispatch(field))
+}
+
+func (c *JSONEncoders) sliceEncoding(sliceType reflect.Type, elementName string, sliceName string) {
 	c.WriteString("\te.WriteByte('[')\n")
 	forLoopLine := fmt.Sprintf(
-		"\tfor index, element := range %s {\n", c.dispatch(field),
+		"\tfor index, %s := range %s {\n", elementName, sliceName,
 	)
 
 	c.WriteString(forLoopLine)
 	c.WriteString("\t\tif index != 0 { e.Comma() }\n")
 
-	elementType := field.Type.Elem()
+	elementType := sliceType.Elem()
+	c.encoderForElementType(elementType, elementName)
+
+	c.WriteString("\t}\n")
+	c.WriteString("\te.WriteByte(']')\n")
+}
+
+func (c *JSONEncoders) mapEncoding(mapType reflect.Type, keyName string, valueName string, mapName string) {
+	c.WriteString("\t e.WriteByte('{')\n")
+
+	var prefix string
+
+	if parts := strings.Split(mapName, "."); len(parts) == 2 {
+		prefix = c.lowerCase(parts[1])
+	} else {
+		prefix = mapName
+	}
+
+	iterationVar := fmt.Sprintf("%sIterationCount", prefix)
+
+	c.WriteString(fmt.Sprintf("\t%s := 0\n", iterationVar))
+	forLoopLine := fmt.Sprintf("\tfor %s, %s := range %s {\n", keyName, valueName, mapName)
+	c.WriteString(forLoopLine)
+	c.WriteString(fmt.Sprintf("\t\tif %s > 0 { e.Comma() }\n", iterationVar))
+	c.WriteString(fmt.Sprintf("\t\t%s++\n", iterationVar))
+
+	keyType := mapType.Key()
+	valueType := mapType.Elem()
+
+	c.encoderForElementType(keyType, keyName)
+	c.WriteString("\te.WriteByte(':')\n")
+	c.encoderForElementType(valueType, valueName)
+
+	c.WriteString("\t}\n")
+	c.WriteString("\t e.WriteByte('}')\n")
+}
+
+func (c *JSONEncoders) encoderForElementType(elementType reflect.Type, elementVar string) {
 	switch elementType.Kind() {
+	case reflect.Interface:
+		c.jsonMarshal("unknownType", elementVar)
 	case reflect.Struct:
 		if elementType.Implements(jsonMarshalerType) {
-			c.marshalJSONForReceiver("element")
+			c.marshalJSONForReceiver(elementVar)
 			return
 		}
 		structName := c.lowerCase(elementType.Name())
-		code := fmt.Sprintf("\t\te.%sStruct(element)\n", structName)
+		code := fmt.Sprintf("\t\te.%sStruct(%s)\n", structName, elementVar)
 		c.WriteString(code)
+	case reflect.Ptr:
+		c.encoderForElementType(elementType.Elem(), "*"+elementVar)
+	case reflect.Slice, reflect.Array:
+		subElementVar := "sub" + elementVar
+		c.sliceEncoding(elementType, subElementVar, elementVar)
+	case reflect.Map:
+		c.mapEncoding(elementType, "subV", "subK", elementVar)
 	default:
 		var code string
 		// TODO get rid of this special case to work around Quote() asymetry
 		if elementType.Kind() == reflect.String {
-			code = "\t\te.Quote(string(element))\n"
+			code = fmt.Sprintf("\t\te.Quote(string(%s))\n", elementVar)
 		} else {
 			encoderFromKind := strings.Title(elementType.Kind().String())
-			code = fmt.Sprintf("\t\te.%s(%s(element))\n", encoderFromKind, strings.ToLower(encoderFromKind))
+			code = fmt.Sprintf("\t\te.%s(%s(%s))\n", encoderFromKind, strings.ToLower(encoderFromKind), elementVar)
 		}
 		c.WriteString(code)
 	}
-
-	c.WriteString("\t}\n")
-	c.WriteString("\te.WriteByte(']')\n")
 }
 
 func (c *JSONEncoders) invokeEncoderForFieldType(fieldType string, field reflect.StructField) {
@@ -320,5 +475,9 @@ func (c *JSONEncoders) structTypeName() string {
 }
 
 func (c *JSONEncoders) structName() string {
-	return c.lowerCase(c.structTypeName())
+	name := c.structTypeName()
+	if name == "" {
+		return "unknown"
+	}
+	return c.lowerCase(name)
 }

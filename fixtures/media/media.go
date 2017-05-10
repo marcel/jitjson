@@ -2,6 +2,8 @@ package media
 
 import (
 	"time"
+
+	"github.com/marcel/jitjson/fixtures/media/iso"
 )
 
 type AlbumType string
@@ -11,14 +13,6 @@ const (
 	SingleAlbumType      AlbumType = "single"
 	CompilationAlbumType AlbumType = "compilation"
 )
-
-type ISO31661Alpha2 string
-
-var AllISO31661Alpha2 = struct {
-	AD, AE /* etc */, UK, US ISO31661Alpha2
-}{
-	AD: "AD", AE: "AE" /* etc */, UK: "UK", US: "US",
-}
 
 type Genre string
 
@@ -30,16 +24,17 @@ const (
 type Popularity int
 
 type Album struct {
-	AlbumType        AlbumType        `json:"albumType"`
-	Artists          []Artist         `json:"artists"`
-	AvailableMarkets []ISO31661Alpha2 `json:"available_markets"`
-	Genres           []Genre          `json:"genres"`
-	Images           []Image          `json:"images"`
-	Label            string           `json:"label"`
-	Name             string           `json:"name"`
-	Popularity       Popularity       `json:"popularity"`
-	ReleaseDate      time.Time        `json:"release_date"`
-	Tracks           []Track          `json:"tracks"`
+	AlbumType          AlbumType                   `json:"album_type"`
+	Artists            []Artist                    `json:"artists"`
+	AvailableMarkets   []iso.ISO31661              `json:"available_markets"`
+	Genres             []Genre                     `json:"genres"`
+	Images             []Image                     `json:"images"`
+	Label              string                      `json:"label"`
+	Name               string                      `json:"name"`
+	Popularity         Popularity                  `json:"popularity"`
+	ReleaseDate        time.Time                   `json:"release_date"`
+	Tracks             []Track                     `json:"tracks"`
+	PopularityByMarket map[iso.ISO31661]Popularity `json:"popularity_by_market"`
 }
 
 var ExampleAlbum = Album{
@@ -51,16 +46,33 @@ var ExampleAlbum = Album{
 				Image{
 					Height: 1000,
 					Width:  1000,
-					URL:    "http://www.billboard.com/files/styles/900_wide/public/media/Joy-Division-Unknown-Pleasures-album-covers-billboard-1000x1000.jpg",
+					URL:    "http://billboard.com/files/82782376.jpg",
 				},
 			},
 			Name:       "Some Artist's Name",
 			Popularity: 42,
 		},
 	},
-	AvailableMarkets: []ISO31661Alpha2{
-		AllISO31661Alpha2.US,
-		AllISO31661Alpha2.UK,
+	AvailableMarkets: []iso.ISO31661{
+		iso.AF,
+		iso.AO,
+		iso.AT,
+		iso.BH,
+		iso.BQ,
+		iso.BL,
+		iso.BT,
+		iso.CA,
+		iso.CL,
+		iso.CX,
+		iso.DE,
+		iso.DK,
+		iso.DO,
+		iso.AD,
+		iso.AE,
+		iso.AX,
+		iso.MX,
+		iso.NO,
+		iso.US,
 	},
 	Genres: []Genre{PostGrunge, ProgRock},
 	Images: []Image{
@@ -166,6 +178,27 @@ var ExampleAlbum = Album{
 			Popularity: 68,
 		},
 	},
+	PopularityByMarket: map[iso.ISO31661]Popularity{
+		iso.AF: 98,
+		iso.AO: 82,
+		iso.AT: 96,
+		iso.BH: 86,
+		iso.BQ: 92,
+		iso.BL: 87,
+		iso.BT: 28,
+		iso.CA: 98,
+		iso.CL: 98,
+		iso.CX: 78,
+		iso.DE: 76,
+		iso.DK: 83,
+		iso.DO: 67,
+		iso.AD: 33,
+		iso.AE: 98,
+		iso.AX: 92,
+		iso.MX: 97,
+		iso.NO: 87,
+		iso.US: 99,
+	},
 }
 
 type Image struct {
@@ -175,14 +208,14 @@ type Image struct {
 }
 
 type Artist struct {
-	Genres     []Genre `json:"genres"`
-	Images     []Image `json:"images"`
-	Name       string  `json:"popularity"`
-	Popularity `json:"popularity"`
+	Genres     []Genre    `json:"genres"`
+	Images     []Image    `json:"images"`
+	Name       string     `json:"name"`
+	Popularity Popularity `json:"popularity"`
 }
 
 type Track struct {
-	Title      string
+	Title      string        `json:"title"`
 	Duration   time.Duration `json:"duration"`
 	IsExplicit bool          `json:"is_explicit"`
 	IsPlayable bool          `json:"is_playable"`

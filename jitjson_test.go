@@ -75,6 +75,8 @@ var expectedFullListOutput = `github.com/marcel/jitjson/navigation
 		Duration
 		StartLocation
 		EndLocation
+		TravelMode
+		Maneuver
 		Instructions
 	navigation.Location
 		Lat

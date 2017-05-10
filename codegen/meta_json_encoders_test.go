@@ -229,7 +229,7 @@ func main() {
 	codeGen.ImportDeclaration()	
 	codeGen.SetBufferPoolVar()
 	codeGen.EncodingBufferStructWrapper()
-	codeGen.JSONMarshalerInterfaceFor("Album")
+	codeGen.JSONMarshalerInterfaceFor(media.Album{})
 	codeGen.EncoderMethodFor(media.Album{})
 
 	codeGen.WriteFile()

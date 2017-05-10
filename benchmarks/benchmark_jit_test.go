@@ -5,15 +5,19 @@ import (
 	"testing"
 
 	"github.com/marcel/jitjson/fixtures/media"
+	"github.com/marcel/jitjson/fixtures/media/iso"
 	"github.com/marcel/jitjson/fixtures/navigation"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestJSONJitMedia(t *testing.T) {
-	r, err := json.Marshal(&media.ExampleAlbum)
+	album := media.ExampleAlbum
+	album.PopularityByMarket = make(map[iso.ISO31661]media.Popularity)
+	album.PopularityByMarket[iso.US] = 99 // Change map to just one pair since order is undefined
+	r, err := json.Marshal(&album)
 	assert.Nil(t, err)
 
-	albumJSON, err := media.ExampleAlbum.MarshalJSON()
+	albumJSON, err := album.MarshalJSON()
 	assert.Nil(t, err)
 	assert.Equal(t, string(r), string(albumJSON))
 }

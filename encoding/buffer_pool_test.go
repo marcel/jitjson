@@ -2,6 +2,7 @@ package encoding
 
 import (
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -24,10 +25,13 @@ func (s *BufferPoolTestSuite) TestBufferPool() {
 	buf.WriteString("1")
 
 	pool.Put(buf)
-	s.Equal("1", pool.Get().String())
+	// Put resets the buffer
+	buf1 := pool.Get()
+	s.Equal(unsafe.Pointer(buf), unsafe.Pointer(buf1))
+	s.Equal("", buf1.String())
 
+	// We didn't put back buf1 so this is a different buffer
 	buf2 := pool.Get()
-	buf2.WriteString("2")
 
-	s.NotEqual(buf.String, buf2.String())
+	s.NotEqual(unsafe.Pointer(buf1), unsafe.Pointer(buf2))
 }

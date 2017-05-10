@@ -6,7 +6,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 	"unicode"
 	"unicode/utf8"
 
@@ -23,7 +25,7 @@ func rootDirArg(cmdClause *kingpin.CmdClause) *string {
 }
 
 var (
-	cli = kingpin.New("jitjson", "Finds structs with json tags and generates efficient (non-reflection) based JSON encoders")
+	cli = kingpin.New("jitjson", "Finds all structs with json tags and generates efficient (non-reflection) based JSON encoders")
 
 	// TODO Add flag to configure the buffer size for the buffer pool
 	// TODO option to include certain structs by name even if they don't have json tags
@@ -105,13 +107,42 @@ type Command interface {
 type GenCommand struct{}
 
 func (c *GenCommand) Run(finder *jitast.JSONStructFinder, out io.Writer) error {
-	for _, structDir := range finder.StructDirectories() {
-		metaCodeGen := codegen.NewMetaJSONEncoders(structDir)
+	wg := sync.WaitGroup{}
+	wg.Add(len(finder.StructDirectories()))
+	errors := make(chan error, len(finder.StructDirectories()))
 
-		err := metaCodeGen.Exec()
-		if err != nil {
-			return err
-		}
+	concurrency := runtime.NumCPU() * runtime.NumCPU()
+
+	sem := make(chan bool, concurrency)
+
+	for _, structDir := range finder.StructDirectories() {
+		sem <- true
+		go func(dir jitast.StructDirectory) {
+			defer func() {
+				<-sem
+				wg.Done()
+			}()
+
+			metaCodeGen := codegen.NewMetaJSONEncoders(dir)
+
+			err := metaCodeGen.Exec()
+			if err != nil {
+				errors <- err
+			}
+		}(structDir)
+	}
+
+	for i := 0; i < cap(sem); i++ {
+		sem <- true
+	}
+
+	go func() {
+		wg.Wait()
+		close(errors)
+	}()
+
+	for result := range errors {
+		return result
 	}
 
 	return nil
